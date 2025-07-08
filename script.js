@@ -29,6 +29,7 @@ function izracunajMarkere() {
     let rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
     let rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
     let rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
+    let rezultatNovaDuljina = document.getElementById('rezultatNovaDuljina');
     let rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
 
 
@@ -56,13 +57,14 @@ function izracunajMarkere() {
     }
 
     // Ako nema greške, osiguravamo da je struktura rezultata ispravna (ako je bila prebrisana greškom)
-    if (!rezultatVarijabilniBPM || !rezultatFrameoviPoBeatu || !rezultatFrameoviPoTakatu || !rezultatPostotakPrilagodbe || !rezultatBrojBeatova) {
+    if (!rezultatVarijabilniBPM || !rezultatFrameoviPoBeatu || !rezultatFrameoviPoTakatu || !rezultatPostotakPrilagodbe || !rezultatNovaDuljina || !rezultatBrojBeatova) {
         rezultatiDiv.innerHTML = `
             <h3>Izračunani rezultati:</h3>
             <p><strong>Varijabilni BPM:</strong> <span class="precizan-broj" id="rezultatVarijabilniBPM"></span></p>
             <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu"></span></p>
             <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu"></span></p>
             <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe"></span></p>
+            <p><strong>Nova duljina glazbene datoteke:</strong> <span id="rezultatNovaDuljina"></span></p>
             <p class="napomena" id="rezultatBrojBeatova"></p>
         `;
         // Ponovno dohvati reference jer je innerHTML prebrisan
@@ -70,23 +72,24 @@ function izracunajMarkere() {
         rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
         rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
         rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
+        rezultatNovaDuljina = document.getElementById('rezultatNovaDuljina');
         rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
     }
 
 
-    // 2. Izračun ukupnog trajanja glazbene datoteke u frameovima
-    const ukupnoSekundi = (sati * 3600) + (minute * 60) + sekunde;
-    const ukupnoFrameova = (ukupnoSekundi * FPS) + frameovi;
+    // 2. Izračun ukupnog trajanja glazbene datoteke u frameovima (originalno trajanje)
+    const ukupnoSekundiOriginalno = (sati * 3600) + (minute * 60) + sekunde;
+    const ukupnoFrameovaOriginalno = (ukupnoSekundiOriginalno * FPS) + frameovi;
 
     // Ako je ukupnoFrameova 0, ne možemo izračunati, prikaži poruku
-    if (ukupnoFrameova === 0) {
+    if (ukupnoFrameovaOriginalno === 0) {
         rezultatiDiv.innerHTML = `<p class="error-message">Ukupno trajanje glazbene datoteke ne može biti nula. Molimo unesite ispravno trajanje.</p>`;
         return;
     }
 
     // 3. Izračun ukupnog broja beatova na fiksnom BPM-u i zaokruživanje
-    const trajanjeUMinutama = ukupnoFrameova / FPS / 60;
-    let brojBeatova = fiksniBPM * trajanjeUMinutama;
+    const trajanjeUMinutamaOriginalno = ukupnoFrameovaOriginalno / FPS / 60;
+    let brojBeatova = fiksniBPM * trajanjeUMinutamaOriginalno;
     brojBeatova = Math.round(brojBeatova); // Zaokruživanje na najbliži cijeli broj
 
     if (brojBeatova === 0) {
@@ -95,7 +98,7 @@ function izracunajMarkere() {
     }
 
     // 4. Izračun Varijabilnog BPM-a (visoka preciznost)
-    const varijabilniBPM = (brojBeatova / ukupnoFrameova) * FPS * 60;
+    const varijabilniBPM = (brojBeatova / ukupnoFrameovaOriginalno) * FPS * 60;
 
     // 5. Izračun Frameova po Beatu (za Varijabilni BPM)
     let frameoviPoBeatu = (60 / varijabilniBPM) * FPS;
@@ -110,17 +113,7 @@ function izracunajMarkere() {
     let postotakTekst = '';
 
     if (varijabilniBPM !== 0) { // Izbjegavanje dijeljenja s nulom
-        // Izračun postotka promjene u trajanju: (Originalno trajanje - Novo trajanje) / Novo trajanje * 100
-        // S obzirom na to da je BPM obrnuto proporcionalan trajanju, formula je slična, ali s zamijenjenim Fiksnim i Varijabilnim BPM-om
-        // Postotak promjene = (Varijabilni BPM - Fiksni BPM) / Fiksni BPM * 100
-        // Ako je Varijabilni BPM manji od Fiksnog BPM-a, glazba je "preduga" i treba je skratiti
-        // Ako je Varijabilni BPM veći od Fiksnog BPM-a, glazba je "prekratka" i treba je produžiti
-
-        // Postotak za koliko treba promijeniti *trajanje* datoteke
-        // Ako je fiksni BPM veći od varijabilnog, znači da je glazba prespora i treba je skratiti.
-        // Ako je fiksni BPM manji od varijabilnog, znači da je glazba prebrza i treba je produžiti.
         postotakPrilagodbe = ((varijabilniBPM - fiksniBPM) / fiksniBPM) * 100;
-
 
         if (postotakPrilagodbe > 0) {
             postotakTekst = `Produžiti za ${postotakPrilagodbe.toFixed(2)}%`;
@@ -133,12 +126,42 @@ function izracunajMarkere() {
         postotakTekst = `N/A`; // Ako varijabilniBPM nije izračunat
     }
 
+    // 8. IZRAČUN NOVE DULJINE GLAZBENE DATOTEKE
+    let novaDuljinaFrameovi = 0;
+    if (fiksniBPM > 0) { // Izbjegavanje dijeljenja s nulom
+        const novaDuljinaSekundePrecizno = (brojBeatova / fiksniBPM) * 60;
+        novaDuljinaFrameovi = Math.round(novaDuljinaSekundePrecizno * FPS);
+    }
 
-    // 8. Prikaz rezultata u HTML-u
+    // Konverzija ukupnih frameova u HH:MM:SS:FF format
+    const novaSati = Math.floor(novaDuljinaFrameovi / (FPS * 3600));
+    const preostaliFrameoviNakonSati = novaDuljinaFrameovi % (FPS * 3600);
+    const novaMinute = Math.floor(preostaliFrameoviNakonSati / (FPS * 60));
+    const preostaliFrameoviNakonMinuta = preostaliFrameoviNakonSati % (FPS * 60);
+    const novaSekunde = Math.floor(preostaliFrameoviNakonMinuta / FPS);
+    const novaFrameovi = preostaliFrameoviNakonMinuta % FPS;
+
+    // Formatiranje u HH:MM:SS:FF
+    const formatiranaNovaDuljina =
+        `${String(novaSati).padStart(2, '0')}:` +
+        `${String(novaMinute).padStart(2, '0')}:` +
+        `${String(novaSekunde).padStart(2, '0')}:` +
+        `${String(novaFrameovi).padStart(Math.ceil(FPS).toString().length, '0')}`; // Prilagođeno paddingu za frameove
+
+    // 9. NOVO: Prikaz frameova po taktu u formatu sekunde:frameovi
+    const sekundePoTakatu = Math.floor(frameoviPoTakatu / FPS);
+    const preostaliFrameoviPoTakatu = frameoviPoTakatu % FPS;
+
+    const formatiraniFrameoviPoTakatu =
+        `${String(sekundePoTakatu).padStart(2, '0')}:` +
+        `${String(preostaliFrameoviPoTakatu).padStart(Math.ceil(FPS).toString().length, '0')}`;
+
+    // 10. Prikaz rezultata u HTML-u
     rezultatVarijabilniBPM.textContent = varijabilniBPM.toFixed(4);
     rezultatFrameoviPoBeatu.textContent = frameoviPoBeatu;
-    rezultatFrameoviPoTakatu.textContent = frameoviPoTakatu;
-    rezultatPostotakPrilagodbe.textContent = postotakTekst; // Prikazujemo gotov tekst
+    rezultatFrameoviPoTakatu.textContent = `${frameoviPoTakatu} (${formatiraniFrameoviPoTakatu})`; // Ažurirani prikaz
+    rezultatPostotakPrilagodbe.textContent = postotakTekst;
+    rezultatNovaDuljina.textContent = formatiranaNovaDuljina;
     rezultatBrojBeatova.textContent = `Ukupni broj beatova za ovo trajanje (zaokruženo): ${brojBeatova}`;
 }
 
