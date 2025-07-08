@@ -27,7 +27,8 @@ function izracunajMarkere() {
     // Dohvati elemente za prikaz rezultata (ako postoje, jer se innerHTML mijenja)
     let rezultatVarijabilniBPM = document.getElementById('rezultatVarijabilniBPM');
     let rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
-    let rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu'); // Promijenjeno ime
+    let rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
+    let rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
     let rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
 
 
@@ -55,18 +56,20 @@ function izracunajMarkere() {
     }
 
     // Ako nema greške, osiguravamo da je struktura rezultata ispravna (ako je bila prebrisana greškom)
-    if (!rezultatVarijabilniBPM || !rezultatFrameoviPoBeatu || !rezultatFrameoviPoTakatu || !rezultatBrojBeatova) {
+    if (!rezultatVarijabilniBPM || !rezultatFrameoviPoBeatu || !rezultatFrameoviPoTakatu || !rezultatPostotakPrilagodbe || !rezultatBrojBeatova) {
         rezultatiDiv.innerHTML = `
             <h3>Izračunani rezultati:</h3>
             <p><strong>Varijabilni BPM:</strong> <span class="precizan-broj" id="rezultatVarijabilniBPM"></span></p>
             <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu"></span></p>
             <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu"></span></p>
+            <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe"></span></p>
             <p class="napomena" id="rezultatBrojBeatova"></p>
         `;
         // Ponovno dohvati reference jer je innerHTML prebrisan
         rezultatVarijabilniBPM = document.getElementById('rezultatVarijabilniBPM');
         rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
         rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
+        rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
         rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
     }
 
@@ -98,18 +101,48 @@ function izracunajMarkere() {
     let frameoviPoBeatu = (60 / varijabilniBPM) * FPS;
     frameoviPoBeatu = Math.round(frameoviPoBeatu); // Zaokruživanje na najbliži cijeli broj
 
-    // 6. Izračun Frameova po Takatu (prije je bilo "između svaka 4 beata")
-    let frameoviPoTakatu = frameoviPoBeatu * mjeraTakta; // Koristi odabranu mjeru takta
-    frameoviPoTakatu = Math.round(frameoviPoTakatu); // Zaokruživanje na najbliži cijeli broj
+    // 6. Izračun Frameova po Takatu
+    let frameoviPoTakatu = frameoviPoBeatu * mjeraTakta;
+    frameoviPoTakatu = Math.round(frameoviPoTakatu);
 
-    // 7. Prikaz rezultata u HTML-u
+    // 7. IZRAČUN I PRIKAZ POSTOTKA PRILAGODBE (PRODUŽITI/SKRATITI)
+    let postotakPrilagodbe = 0;
+    let postotakTekst = '';
+
+    if (varijabilniBPM !== 0) { // Izbjegavanje dijeljenja s nulom
+        // Izračun postotka promjene u trajanju: (Originalno trajanje - Novo trajanje) / Novo trajanje * 100
+        // S obzirom na to da je BPM obrnuto proporcionalan trajanju, formula je slična, ali s zamijenjenim Fiksnim i Varijabilnim BPM-om
+        // Postotak promjene = (Varijabilni BPM - Fiksni BPM) / Fiksni BPM * 100
+        // Ako je Varijabilni BPM manji od Fiksnog BPM-a, glazba je "preduga" i treba je skratiti
+        // Ako je Varijabilni BPM veći od Fiksnog BPM-a, glazba je "prekratka" i treba je produžiti
+
+        // Postotak za koliko treba promijeniti *trajanje* datoteke
+        // Ako je fiksni BPM veći od varijabilnog, znači da je glazba prespora i treba je skratiti.
+        // Ako je fiksni BPM manji od varijabilnog, znači da je glazba prebrza i treba je produžiti.
+        postotakPrilagodbe = ((varijabilniBPM - fiksniBPM) / fiksniBPM) * 100;
+
+
+        if (postotakPrilagodbe > 0) {
+            postotakTekst = `Produžiti za ${postotakPrilagodbe.toFixed(2)}%`;
+        } else if (postotakPrilagodbe < 0) {
+            postotakTekst = `Skratiti za ${Math.abs(postotakPrilagodbe).toFixed(2)}%`;
+        } else {
+            postotakTekst = `Nije potrebna prilagodba (0.00%)`;
+        }
+    } else {
+        postotakTekst = `N/A`; // Ako varijabilniBPM nije izračunat
+    }
+
+
+    // 8. Prikaz rezultata u HTML-u
     rezultatVarijabilniBPM.textContent = varijabilniBPM.toFixed(4);
     rezultatFrameoviPoBeatu.textContent = frameoviPoBeatu;
     rezultatFrameoviPoTakatu.textContent = frameoviPoTakatu;
+    rezultatPostotakPrilagodbe.textContent = postotakTekst; // Prikazujemo gotov tekst
     rezultatBrojBeatova.textContent = `Ukupni broj beatova za ovo trajanje (zaokruženo): ${brojBeatova}`;
 }
 
-// Postavljanje slušatelja događaja (Event Listeners)
+// Postavljanje slušatelja događaja (Event Listeners) - ostaje isto
 document.addEventListener('DOMContentLoaded', () => {
     const fiksniBPMInput = document.getElementById('fiksniBPM');
     const fpsSelect = document.getElementById('fpsSelect');
@@ -119,15 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameoviInput = document.getElementById('frameovi');
     const mjeraTaktaSelect = document.getElementById('mjeraTakta');
 
-    // Dodajemo 'input' event listener na svako polje
     fiksniBPMInput.addEventListener('input', izracunajMarkere);
-    fpsSelect.addEventListener('change', izracunajMarkere); // 'change' za select elemente
+    fpsSelect.addEventListener('change', izracunajMarkere);
     satiInput.addEventListener('input', izracunajMarkere);
     minuteInput.addEventListener('input', izracunajMarkere);
     sekundeInput.addEventListener('input', izracunajMarkere);
     frameoviInput.addEventListener('input', izracunajMarkere);
-    mjeraTaktaSelect.addEventListener('change', izracunajMarkere); // 'change' za select elemente
+    mjeraTaktaSelect.addEventListener('change', izracunajMarkere);
 
-    // Inicijalno izračunavanje kada se stranica učita
     izracunajMarkere();
 });
