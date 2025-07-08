@@ -1,0 +1,110 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align at the top for smaller screens */
+    min-height: 100vh;
+    box-sizing: border-box;
+    color: #333;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+    box-sizing: border-box;
+}
+
+h1 {
+    color: #0056b3;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.8em;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.input-group input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 1em;
+    -moz-appearance: textfield; /* Firefox hide arrows */
+}
+
+/* Hide arrows for Chrome, Safari, Edge */
+.input-group input[type="number"]::-webkit-outer-spin-button,
+.input-group input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.duration-group .duration-fields {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Small gap between inputs and colons */
+}
+
+.duration-group .duration-fields input {
+    flex: 1; /* Distribute space equally */
+    text-align: center;
+}
+
+.duration-group .colon {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #777;
+}
+
+.help-text {
+    font-size: 0.85em;
+    color: #777;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.results-box {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #e9f7ff;
+    border: 1px solid #cceeff;
+    border-radius: 8px;
+    color: #004085;
+}
+
+.results-box h3 {
+    color: #0056b3;
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.results-box p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.results-box strong {
+    color: #002752;
+}
+
+.results-box .precizan-broj {
+    font-weight: bold;
+    color:
