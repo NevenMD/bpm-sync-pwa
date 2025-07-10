@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsPage = document.getElementById('results-page');
     const calculateButton = document.getElementById('calculateButton');
     const backButton = document.getElementById('backButton');
-    const exportEdlButton = document.getElementById('exportEdlButton'); // This button will now export CSV
-    exportEdlButton.textContent = 'Izvezi CSV';
+    const exportEdlButton = document.getElementById('exportEdlButton'); 
+    exportEdlButton.textContent = 'Izvezi XML'; // Promjena teksta gumba
 
     const fiksniBPMInput = document.getElementById('fiksniBPM');
     const ciljaniBPMInput = document.getElementById('ciljaniBPM');
@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
     const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
-    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
-    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
+    const sekundeKrajSegmentaInput = document = document.getElementById('sekundeKrajSegmenta'); 
+    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta'); 
 
     const fpsHelpText = document.getElementById('fpsHelpText');
 
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const markeriZaIspravakDiv = document.getElementById('markeriZaIspravak');
     const noMarkersMessage = document.getElementById('noMarkersMessage');
 
-    let edlMarkers = []; // This array will now be used for CSV markers
+    let edlMarkers = []; // This array will now be used for XML markers
 
     function showPage(pageToShow) {
         if (pageToShow === 'input') {
@@ -173,32 +173,80 @@ document.addEventListener('DOMContentLoaded', () => {
                `${String(frameovi).padStart(framePadding, '0')}`;
     }
 
-    // Function to generate and download the CSV file
-    function generateAndDownloadCSV() {
+    // Function to escape XML special characters
+    function escapeXml(unsafe) {
+        return unsafe.replace(/[<>&'"]/g, function (c) {
+            switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case "'": return '&apos;';
+                case '"': return '&quot;';
+            }
+        });
+    }
+
+    // NEW FUNCTION: generateAndDownloadXML
+    function generateAndDownloadXML() {
         if (edlMarkers.length === 0) {
-            alert('Nema markera za generiranje CSV-a. Molimo prvo izračunajte markere.');
+            alert('Nema markera za generiranje XML-a. Molimo prvo izračunajte markere.');
             return;
         }
 
-        let csvContent = '# No,Anchor,Position,Duration,Comment\r\n'; // CSV Header with CRLF
+        const CRLF = '\r\n'; // Carriage Return Line Feed for Windows compatibility
+
+        let xmlContent = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>${CRLF}`;
+        xmlContent += `<edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">${CRLF}`;
+        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${CRLF}`; // Format version as seen in example
+
+        // Generate CreateDate
+        const currentDate = new Date();
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dayOfWeek = days[currentDate.getDay()];
+        const month = months[currentDate.getMonth()];
+        const dayOfMonth = String(currentDate.getDate()).padStart(2, '0');
+        const year = currentDate.getFullYear();
+        const hours = String(currentDate.getHours()).padStart(2, '0');
+        const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+        const seconds = String(currentDate.getSeconds()).padStart(2, '0');
+        
+        // Timezone: The example XML doesn't have a timezone abbreviation, so we'll omit it to match
+        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`;
+        
+        xmlContent += `\t<edius:markerLists>${CRLF}`;
 
         edlMarkers.forEach((marker, index) => {
             const markerNo = index + 1;
-            const anchor = 'ON'; // Based on the example CSV provided by the user
-            const position = marker.timecode;
-            const duration = ''; // As observed in the example CSV
-            const comment = marker.comment; // Use the generated comment
+            const anchorValue = 1; // As observed in the example XML
+            const positionTimecode = marker.timecode;
+            const durationValue = '--:--:--:--'; // As observed in the example XML
+            const colorValue = '0xffffffff'; // As observed in the example XML
 
-            // Escape comments if they contain commas or newlines (though unlikely for single-line comments)
-            // For simplicity, we'll assume comments won't contain commas for now.
-            // If they do, they should be enclosed in double quotes: `"${comment.replace(/"/g, '""')}"`
-            csvContent += `${markerNo},${anchor},${position},${duration},${comment}\r\n`;
+            let commentXml = '';
+            if (marker.comment.trim() === '') {
+                commentXml = `<edius:comment/>`; // Self-closing tag for empty comment
+            } else {
+                commentXml = `<edius:comment>${escapeXml(marker.comment)}</edius:comment>`;
+            }
+
+            xmlContent += `\t\t<edius:marker>${CRLF}`;
+            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${CRLF}`;
+            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${CRLF}`;
+            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${CRLF}`;
+            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${CRLF}`;
+            xmlContent += `\t\t\t${commentXml}${CRLF}`;
+            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${CRLF}`;
+            xmlContent += `\t\t</edius:marker>${CRLF}`;
         });
 
-        const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.csv`;
+        xmlContent += `\t</edius:markerLists>${CRLF}`;
+        xmlContent += `</edius:markerInfo>${CRLF}`;
 
-        // Create a Blob with the CSV content. Default Blob encoding is UTF-8, which is generally fine for CSV.
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.xml`;
+
+        // Create a Blob with the XML content. Specify 'application/xml' and 'charset=utf-16'
+        const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-16' }); 
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -208,9 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
     }
-
-    // Removed the original generateAndDownloadEDL function as it's no longer needed for this task.
-    // If you need it back, please provide the original code.
 
     function izracunajMarkere() {
         console.log('Calculate button clicked. Starting calculation...'); 
@@ -389,9 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const p = document.createElement('p');
                     p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
                     markeriZaIspravakDiv.appendChild(p);
-
-                    // currentDrift = 0; // This line resets drift for the loop, which might be incorrect if it affects subsequent calculations
-                                      // It should be removed as currentDrift is already calculated per iteration.
                 }
             }
         }
@@ -417,8 +459,8 @@ document.addEventListener('DOMContentLoaded', () => {
         exportEdlButton.style.display = 'none';
         edlMarkers = [];
     });
-    // Change the event listener to call the new CSV export function
-    exportEdlButton.addEventListener('click', generateAndDownloadCSV);
+    // Change the event listener to call the new XML export function
+    exportEdlButton.addEventListener('click', generateAndDownloadXML); // <--- Promijenjeno na generateAndDownloadXML
 
     fpsHelpText.textContent = `Trenutni FPS: ${parseFloat(fpsSelect.value)}`;
     frameoviCijeleInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
