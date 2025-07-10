@@ -55,17 +55,17 @@
 
                 <div class="timecode-input" id="timecode-cijela">
                     <h4>Ukupno trajanje fizičke datoteke:</h4>
-                    <input type="number" id="satiCijele" placeholder="HH" min="0" max="99" value="00">:<input type="number" id="minuteCijele" placeholder="MM" min="0" max="59" value="05">:<input type="number" id="sekundeCijele" placeholder="SS" min="0" max="59" value="00">:<input type="number" id="frameoviCijele" placeholder="FF" min="0" max="24" value="00">
+                    <input type="text" id="ukupnoTrajanjeDatotekeInput" placeholder="HH:MM:SS:FF" value="00:05:00:00" class="timecode-combined-input">
                 </div>
 
                 <div class="timecode-input" id="timecode-pocetak-segmenta">
                     <h4>Timecode početka glazbenog segmenta:</h4>
-                    <input type="number" id="satiPocetakSegmenta" placeholder="HH" min="0" max="99" value="00">:<input type="number" id="minutePocetakSegmenta" placeholder="MM" min="0" max="59" value="00">:<input type="number" id="sekundePocetakSegmenta" placeholder="SS" min="0" max="59" value="00">:<input type="number" id="frameoviPocetakSegmenta" placeholder="FF" min="0" max="24" value="00">
+                    <input type="text" id="pocetakGlazbenogSegmentaInput" placeholder="HH:MM:SS:FF" value="00:00:00:00" class="timecode-combined-input">
                 </div>
 
                 <div class="timecode-input" id="timecode-kraj-segmenta">
                     <h4>Timecode kraja glazbenog segmenta:</h4>
-                    <input type="number" id="satiKrajSegmenta" placeholder="HH" min="0" max="99" value="00">:<input type="number" id="minuteKrajSegmenta" placeholder="MM" min="0" max="59" value="04">:<input type="number" id="sekundeKrajSegmenta" placeholder="SS" min="0" max="59" value="59">:<input type="number" id="frameoviKrajSegmenta" placeholder="FF" min="0" max="24" value="00">
+                    <input type="text" id="krajGlazbenogSegmentaInput" placeholder="HH:MM:SS:FF" value="00:04:59:00" class="timecode-combined-input">
                 </div>
             </div>
 
@@ -79,13 +79,15 @@
 
         <div id="results-page" class="page">
             <h2>Rezultati proračuna</h2>
-            <div id="rezultati">
-                <p>Ciljani BPM videa: <span id="rezultatCiljaniBPM"></span></p>
-                <p>Izmjereni BPM glazbe: <span id="rezultatIzmjereniBPM"></span></p>
-                <p>Ukupan broj beatova (ciljani BPM): <span id="rezultatUkupanBrojBeatovaCilj"></span></p>
-                <p>Ukupan broj beatova (stvarni BPM): <span id="rezultatUkupanBrojBeatovaStvarno"></span></p>
-                <p>Ukupni drift na kraju segmenta: <span id="rezultatUkupniDrift"></span></p>
-                <p class="note" id="rezultatNapomenaDrift"></p>
+            <div id="markeriOutput" class="output-section">
+                </div>
+            <button id="generateXmlButton" style="display:none;">Generiraj XML</button>
+            <button id="downloadXmlButton" style="display:none;">Preuzmi XML</button>
+            <div id="xmlOutput" class="output-section xml-output">
+                </div>
+        </div>
+    </div>
 
-                <h3>Markeri za ispravak drifta:</h3>
-                <div id="markeriZaIspravak"></div>
+    <script src="script.js"></script> 
+</body>
+</html>
