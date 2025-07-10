@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const orderedInputs = [
             fiksniBPMInput, ciljaniBPMInput,
             satiCijeleInput, minuteCijeleInput, sekundeCijeleInput, frameoviCijeleInput,
-            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput, // OVO JE ISPRAVLJENO SADA!
+            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput, 
             satiKrajSegmentaInput, minuteKrajSegmentaInput, sekundeKrajSegmentaInput, frameoviKrajSegmentaInput,
             pragDriftaFrameoviInput
         ];
@@ -193,12 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const CRLF = '\r\n'; // Carriage Return Line Feed for Windows compatibility
+        const CRLF = '\r\n'; 
 
         let xmlContent = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>${CRLF}`;
         xmlContent += `<edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">${CRLF}`;
-        xmlContent += `    <edius:formatVersion>4</edius:formatVersion>${CRLF}`; 
-
+        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${CRLF}`; // Vraćeno na tab
+        
         // Generate CreateDate
         const currentDate = new Date();
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -211,9 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutes = String(currentDate.getMinutes()).padStart(2, '0');
         const seconds = String(currentDate.getSeconds()).padStart(2, '0');
         
-        xmlContent += `    <edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`; 
+        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`; // Vraćeno na tab
         
-        xmlContent += `    <edius:markerLists>${CRLF}`; 
+        xmlContent += `\t<edius:markerLists>${CRLF}`; // Vraćeno na tab
 
         edlMarkers.forEach((marker, index) => {
             const markerNo = index + 1;
@@ -229,17 +229,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentXml = `<edius:comment>${escapeXml(marker.comment)}</edius:comment>`;
             }
 
-            xmlContent += `        <edius:marker>${CRLF}`; 
-            xmlContent += `            <edius:no>${markerNo}</edius:no>${CRLF}`; 
-            xmlContent += `            <edius:anchor>${anchorValue}</edius:anchor>${CRLF}`; 
-            xmlContent += `            <edius:position>${positionTimecode}</edius:position>${CRLF}`; 
-            xmlContent += `            <edius:duration>${durationValue}</edius:duration>${CRLF}`; 
-            xmlContent += `            ${commentXml}${CRLF}`; 
-            xmlContent += `            <edius:color>${colorValue}</edius:color>${CRLF}`; 
-            xmlContent += `        </edius:marker>${CRLF}`; 
+            xmlContent += `\t\t<edius:marker>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t${commentXml}${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t</edius:marker>${CRLF}`; // Vraćeno na tab
         });
 
-        xmlContent += `    </edius:markerLists>${CRLF}`; 
+        xmlContent += `\t</edius:markerLists>${CRLF}`; // Vraćeno na tab
         xmlContent += `</edius:markerInfo>${CRLF}`;
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.xml`;
