@@ -178,29 +178,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let edlContent = 'TITLE: BPM_Sync_Markers\n';
-        edlContent += `FCM: NON-DROP FRAME\n\n`; 
+        edlContent += `FCM: NON-DROP FRAME\n\n`; // Obavezno prazna linija
 
         const fps = parseFloat(fpsSelect.value);
         const dummyClipDurationFrames = Math.round(fps * 10); 
         const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
-        // Dummy klip - i dalje `C`ut type za prvi klip jer on simulira postojanje trake
-        edlContent += `001      V        DUMMY_CLIP  V     C    00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
+        // Reel ID za DUMMY_CLIP natrag na AX, zbog strogih CMX3600 pravila
+        // Pažljivo postavljeni razmaci!
+        // EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
+        // 001      AX       DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
+        edlContent += `001      AX       DUMMY_CLIP  V     C        00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
         edlContent += `* COMMENT: Dummy clip for Edius compatibility\n`;
+        edlContent += `\n`; // Dodatna prazna linija nakon dummy klipa (neki parsieri to vole)
+
 
         edlMarkers.forEach((marker, index) => {
             const eventNum = String(index + 2).padStart(3, '0');
+            // Reel ID za markere je i dalje 'V' (Video) ili 'AX' ako se želi biti dosljedan
+            // ali držimo 'V' jer smo ga probali i ako je do markera, onda je do tipa 'M'
             const reelId = 'V'; 
             const track = 'V'; 
-            // **** PROMJENA OVDJE: 'C' (Cut) postaje 'M' (Marker) ****
-            const type = 'M'; 
-            const clipName = 'MARKER_POINT'; // Malo generičkije ime
+            const type = 'M'; // Marker type - ovo je ključno za testiranje s "v" tipkom
+            const clipName = 'MARKER_POINT'; // 12 znakova
 
             const markerTC = marker.timecode; 
             
-            // Za 'M' (Marker) tip eventa, sva 4 timecodea su isti (pozicija markera)
-            edlContent += `${eventNum}   ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\n`;
+            // Pažljivo postavljeni razmaci.
+            // 002      V        MARKER_POINTV     M        00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
+            // Razmaci su iznimno precizno postavljeni.
+            //                  ReelID   ClipName      Track Type Source In   Source Out  Dest In     Dest Out
+            //                  |        |             |     |    |           |           |           |
+            //               3 zn. + 3 razm. + 8 zn. + 3 razm. + 1 zn. + 5 razm. + 1 zn. + 4 razm. + Timecode
+            edlContent += `${eventNum}      ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\n`;
             edlContent += `* COMMENT: ${marker.comment}\n`; 
+            edlContent += `\n`; // Dodatna prazna linija nakon svakog markera
         });
 
         const blob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
