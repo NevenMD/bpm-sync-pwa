@@ -42,7 +42,8 @@
         </div>
 
         <div class="input-group duration-group">
-            <label>Trajanje glazbene datoteke (sati:minute:sekunde:frameovi):</label>
+            <h3>1. Trajanje glazbenog segmenta (od 1. do zadnjeg beata)</h3>
+            <p class="help-text">Unesite trajanje **glazbenog dijela** vaše audio datoteke (HH:MM:SS:FF), bez tišine na početku i kraju.</p>
             <div class="duration-fields">
                 <input type="number" id="sati" value="0" min="0">
                 <span class="colon">:</span>
@@ -50,10 +51,24 @@
                 <span class="colon">:</span>
                 <input type="number" id="sekunde" value="0" min="0" max="59">
                 <span class="colon">:</span>
-                <input type="number" id="frameovi" value="0" min="0" max="999"> </div>
+                <input type="number" id="frameovi" value="0" min="0"> 
+            </div>
             <p class="help-text" id="fpsHelpText">Current FPS: 25</p>
         </div>
 
+        <div class="input-group duration-group">
+            <h3>2. Ukupna duljina fizičke datoteke</h3>
+            <p class="help-text">Unesite **ukupno trajanje audio datoteke** (HH:MM:SS:FF) onako kako je vidite u svom video editoru, uključujući sve praznine.</p>
+            <div class="duration-fields">
+                <input type="number" id="satiCijele" value="0" min="0">
+                <span class="colon">:</span>
+                <input type="number" id="minuteCijele" value="1" min="0" max="59">
+                <span class="colon">:</span>
+                <input type="number" id="sekundeCijele" value="0" min="0" max="59">
+                <span class="colon">:</span>
+                <input type="number" id="frameoviCijele" value="0" min="0">
+            </div>
+        </div>
         <div class="input-group">
             <label for="mjeraTakta">Broj udaraca u taktu (npr. 4 za 4/4, 3 za 3/4):</label>
             <select id="mjeraTakta">
@@ -70,7 +85,8 @@
             <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu">0</span></p>
             <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu">0</span></p>
             <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe">0.00%</span></p>
-            <p><strong>Nova duljina glazbene datoteke:</strong> <span id="rezultatNovaDuljina">00:00:00:00</span></p>
+            <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljina">00:00:00:00</span></p>
+            <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele">00:00:00:00</span></p>
             <p class="napomena" id="rezultatBrojBeatova">Ukupni broj beatova za ovo trajanje (zaokruženo): 0</p>
         </div>
     </div>
