@@ -42,22 +42,7 @@
         </div>
 
         <div class="input-group duration-group">
-            <h3>1. Trajanje glazbenog segmenta (od 1. do zadnjeg beata)</h3>
-            <p class="help-text">Unesite trajanje **glazbenog dijela** vaše audio datoteke (HH:MM:SS:FF), bez tišine na početku i kraju.</p>
-            <div class="duration-fields">
-                <input type="number" id="satiSegment" value="0" min="0">
-                <span class="colon">:</span>
-                <input type="number" id="minuteSegment" value="1" min="0" max="59">
-                <span class="colon">:</span>
-                <input type="number" id="sekundeSegment" value="0" min="0" max="59">
-                <span class="colon">:</span>
-                <input type="number" id="frameoviSegment" value="0" min="0">
-            </div>
-            <p class="help-text" id="fpsHelpText">Current FPS: 25</p>
-        </div>
-
-        <div class="input-group duration-group">
-            <h3>2. Ukupna duljina fizičke datoteke</h3>
+            <h3>1. Ukupna duljina fizičke datoteke</h3>
             <p class="help-text">Unesite **ukupno trajanje audio datoteke** (HH:MM:SS:FF) onako kako je vidite u svom video editoru, uključujući sve praznine.</p>
             <div class="duration-fields">
                 <input type="number" id="satiCijele" value="0" min="0">
@@ -68,11 +53,12 @@
                 <span class="colon">:</span>
                 <input type="number" id="frameoviCijele" value="0" min="0">
             </div>
+            <p class="help-text" id="fpsHelpText">Current FPS: 25</p>
         </div>
 
         <div class="input-group duration-group">
-            <h3>3. Početak glazbenog segmenta unutar fizičke datoteke</h3>
-            <p class="help-text">Unesite **timecode od kojeg počinje glazbeni segment** (prvi takt, prvi beat) unutar *ukupne duljine fizičke datoteke* (HH:MM:SS:FF).</p>
+            <h3>2. Timecode početka glazbenog segmenta</h3>
+            <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** unutar fizičke datoteke od kojeg počinje glazbeni segment (npr. prvi takt, prvi beat).</p>
             <div class="duration-fields">
                 <input type="number" id="satiPocetakSegmenta" value="0" min="0">
                 <span class="colon">:</span>
@@ -81,6 +67,20 @@
                 <input type="number" id="sekundePocetakSegmenta" value="0" min="0" max="59">
                 <span class="colon">:</span>
                 <input type="number" id="frameoviPocetakSegmenta" value="0" min="0">
+            </div>
+        </div>
+
+        <div class="input-group duration-group">
+            <h3>3. Timecode kraja glazbenog segmenta</h3>
+            <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** unutar fizičke datoteke do kojeg traje glazbeni segment (npr. kraj zadnjeg takta, zadnjeg beata).</p>
+            <div class="duration-fields">
+                <input type="number" id="satiKrajSegmenta" value="0" min="0">
+                <span class="colon">:</span>
+                <input type="number" id="minuteKrajSegmenta" value="1" min="0" max="59">
+                <span class="colon">:</span>
+                <input type="number" id="sekundeKrajSegmenta" value="0" min="0" max="59">
+                <span class="colon">:</span>
+                <input type="number" id="frameoviKrajSegmenta" value="0" min="0">
             </div>
         </div>
         <div class="input-group">
@@ -99,10 +99,11 @@
             <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu">0</span></p>
             <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu">0</span></p>
             <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe">0.00%</span></p>
+            <p><strong>Izračunata originalna duljina segmenta:</strong> <span id="rezultatIzracunataOriginalnaDuljinaSegmenta">00:00:00:00</span></p>
             <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljinaSegment">00:00:00:00</span></p>
             <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele">00:00:00:00</span></p>
-            <p><strong>Novi početak segmenta:</strong> <span id="rezultatNoviPocetakSegmenta">00:00:00:00</span></p>
-            <p><strong>Novi kraj segmenta:</strong> <span id="rezultatNoviKrajSegmenta">00:00:00:00</span></p>
+            <p><strong>Novi timecode početka segmenta:</strong> <span id="rezultatNoviPocetakSegmenta">00:00:00:00</span></p>
+            <p><strong>Novi timecode kraja segmenta:</strong> <span id="rezultatNoviKrajSegmenta">00:00:00:00</span></p>
             <p class="napomena" id="rezultatBrojBeatova">Ukupni broj beatova za ovo trajanje (zaokruženo): 0</p>
         </div>
     </div>

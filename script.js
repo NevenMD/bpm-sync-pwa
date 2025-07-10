@@ -4,23 +4,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const fpsSelect = document.getElementById('fpsSelect');
     const mjeraTaktaSelect = document.getElementById('mjeraTakta');
 
-    // Inputi za duljinu glazbenog segmenta
-    const satiSegmentInput = document.getElementById('satiSegment');
-    const minuteSegmentInput = document.getElementById('minuteSegment');
-    const sekundeSegmentInput = document.getElementById('sekundeSegment');
-    const frameoviSegmentInput = document.getElementById('frameoviSegment');
-
     // Inputi za ukupnu duljinu fizičke datoteke
     const satiCijeleInput = document.getElementById('satiCijele');
     const minuteCijeleInput = document.getElementById('minuteCijele');
     const sekundeCijeleInput = document.getElementById('sekundeCijele');
     const frameoviCijeleInput = document.getElementById('frameoviCijele');
 
-    // NOVI Inputi za početak glazbenog segmenta unutar fizičke datoteke
+    // NOVI Inputi za timecode početka glazbenog segmenta
     const satiPocetakSegmentaInput = document.getElementById('satiPocetakSegmenta');
     const minutePocetakSegmentaInput = document.getElementById('minutePocetakSegmenta');
     const sekundePocetakSegmentaInput = document.getElementById('sekundePocetakSegmenta');
     const frameoviPocetakSegmentaInput = document.getElementById('frameoviPocetakSegmenta');
+
+    // NOVI Inputi za timecode kraja glazbenog segmenta
+    const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
+    const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
+    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
+    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
     // Elementi za prikaz rezultata
     const rezultatiDiv = document.getElementById('rezultati');
@@ -28,11 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let rezultatFrameoviPoBeatu;
     let rezultatFrameoviPoTakatu;
     let rezultatPostotakPrilagodbe;
+    let rezultatIzracunataOriginalnaDuljinaSegmenta; // NOVO
     let rezultatNovaDuljinaSegment;
     let rezultatBrojBeatova;
     let rezultatNovaDuljinaCijele;
-    let rezultatNoviPocetakSegmenta; // NOVO
-    let rezultatNoviKrajSegmenta;   // NOVO
+    let rezultatNoviPocetakSegmenta;
+    let rezultatNoviKrajSegmenta;
 
     const fpsHelpText = document.getElementById('fpsHelpText');
 
@@ -44,10 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu"></span></p>
             <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu"></span></p>
             <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe"></span></p>
+            <p><strong>Izračunata originalna duljina segmenta:</strong> <span id="rezultatIzracunataOriginalnaDuljinaSegmenta"></span></p>
             <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljinaSegment"></span></p>
             <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele"></span></p>
-            <p><strong>Novi početak segmenta:</strong> <span id="rezultatNoviPocetakSegmenta"></span></p>
-            <p><strong>Novi kraj segmenta:</strong> <span id="rezultatNoviKrajSegmenta"></span></p>
+            <p><strong>Novi timecode početka segmenta:</strong> <span id="rezultatNoviPocetakSegmenta"></span></p>
+            <p><strong>Novi timecode kraja segmenta:</strong> <span id="rezultatNoviKrajSegmenta"></span></p>
             <p class="napomena" id="rezultatBrojBeatova"></p>
         `;
         // Ponovno dohvati reference jer je innerHTML prebrisan
@@ -55,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
         rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
         rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
+        rezultatIzracunataOriginalnaDuljinaSegmenta = document.getElementById('rezultatIzracunataOriginalnaDuljinaSegmenta');
         rezultatNovaDuljinaSegment = document.getElementById('rezultatNovaDuljinaSegment');
         rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
         rezultatNovaDuljinaCijele = document.getElementById('rezultatNovaDuljinaCijele');
@@ -77,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Funkcija za automatsko prebacivanje fokusa na sljedeće polje ---
     function setupAutoAdvance() {
         const orderedInputs = [
-            satiSegmentInput, minuteSegmentInput, sekundeSegmentInput, frameoviSegmentInput,
             satiCijeleInput, minuteCijeleInput, sekundeCijeleInput, frameoviCijeleInput,
-            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput
+            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput,
+            satiKrajSegmentaInput, minuteKrajSegmentaInput, sekundeKrajSegmentaInput, frameoviKrajSegmentaInput
         ];
 
         orderedInputs.forEach((input, index) => {
@@ -107,11 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const maxFramesStrLength = String(maxFrames).length;
 
                     if ((value.length >= maxFramesStrLength && typedValue >=0 && typedValue <= maxFrames) || value.length === 2) {
-                        if (input === frameoviSegmentInput) {
-                            satiCijeleInput.focus();
-                        } else if (input === frameoviCijeleInput) {
-                            satiPocetakSegmentaInput.focus(); // NOVO: Skok na početak segmenta
-                        } else if (input === frameoviPocetakSegmentaInput) { // NOVO: Skok s kraja početka segmenta
+                        if (input === frameoviCijeleInput) {
+                            satiPocetakSegmentaInput.focus();
+                        } else if (input === frameoviPocetakSegmentaInput) {
+                            satiKrajSegmentaInput.focus();
+                        } else if (input === frameoviKrajSegmentaInput) {
                             mjeraTaktaSelect.focus();
                         }
                     }
@@ -144,30 +147,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const fiksniBPM = parseFloat(fiksniBPMInput.value);
         const FPS = parseFloat(fpsSelect.value);
 
-        // Vrijednosti za glazbeni segment
-        const satiSegment = parseInt(satiSegmentInput.value) || 0;
-        const minuteSegment = parseInt(minuteSegmentInput.value) || 0;
-        const sekundeSegment = parseInt(sekundeSegmentInput.value) || 0;
-        const frameoviSegment = parseInt(frameoviSegmentInput.value) || 0;
-
         // Vrijednosti za ukupnu fizičku datoteku
         const satiCijele = parseInt(satiCijeleInput.value) || 0;
         const minuteCijele = parseInt(minuteCijeleInput.value) || 0;
         const sekundeCijele = parseInt(sekundeCijeleInput.value) || 0;
         const frameoviCijele = parseInt(frameoviCijeleInput.value) || 0;
 
-        // NOVE Vrijednosti za početak glazbenog segmenta
+        // Vrijednosti za timecode početka glazbenog segmenta
         const satiPocetakSegmenta = parseInt(satiPocetakSegmentaInput.value) || 0;
         const minutePocetakSegmenta = parseInt(minutePocetakSegmentaInput.value) || 0;
         const sekundePocetakSegmenta = parseInt(sekundePocetakSegmentaInput.value) || 0;
         const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
 
+        // Vrijednosti za timecode kraja glazbenog segmenta
+        const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
+        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0;
+        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0;
+        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0;
+
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
         fpsHelpText.textContent = `Current FPS: ${FPS}`;
-        frameoviSegmentInput.setAttribute('max', Math.floor(FPS - 1));
         frameoviCijeleInput.setAttribute('max', Math.floor(FPS - 1));
-        frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(FPS - 1)); // NOVO
+        frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(FPS - 1));
+        frameoviKrajSegmentaInput.setAttribute('max', Math.floor(FPS - 1));
+
+        // Konverzija svih unosa u ukupne frameove
+        const ukupnoSekundiCijele = (satiCijele * 3600) + (minuteCijele * 60) + sekundeCijele;
+        const ukupnoFrameovaCijele = (ukupnoSekundiCijele * FPS) + frameoviCijele;
+
+        const ukupnoSekundiPocetakSegmenta = (satiPocetakSegmenta * 3600) + (minutePocetakSegmenta * 60) + sekundePocetakSegmenta;
+        const ukupnoFrameovaPocetakSegmenta = (ukupnoSekundiPocetakSegmenta * FPS) + frameoviPocetakSegmenta;
+
+        const ukupnoSekundiKrajSegmenta = (satiKrajSegmenta * 3600) + (minuteKrajSegmenta * 60) + sekundeKrajSegmenta;
+        const ukupnoFrameovaKrajSegmenta = (ukupnoSekundiKrajSegmenta * FPS) + frameoviKrajSegmenta;
+
+        // Izračun duljine glazbenog segmenta (u frameovima) iz razlike TCa
+        const ukupnoFrameovaSegment = ukupnoFrameovaKrajSegmenta - ukupnoFrameovaPocetakSegmenta;
 
         // Provjera unosa i poruke o grešci
         let errorMessage = '';
@@ -176,45 +192,36 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (isNaN(FPS) || FPS <= 0) {
             errorMessage = 'Molimo odaberite ispravan FPS.';
         }
-        else if (isNaN(satiSegment) || satiSegment < 0 || isNaN(minuteSegment) || minuteSegment < 0 || minuteSegment > 59 || isNaN(sekundeSegment) || sekundeSegment < 0 || sekundeSegment > 59 || isNaN(frameoviSegment) || frameoviSegment < 0 || frameoviSegment >= FPS) {
-            errorMessage = `Molimo unesite ispravno trajanje glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
-        }
+        // Validacija za ukupnu duljinu datoteke
         else if (isNaN(satiCijele) || satiCijele < 0 || isNaN(minuteCijele) || minuteCijele < 0 || minuteCijele > 59 || isNaN(sekundeCijele) || sekundeCijele < 0 || sekundeCijele > 59 || isNaN(frameoviCijele) || frameoviCijele < 0 || frameoviCijele >= FPS) {
             errorMessage = `Molimo unesite ispravno trajanje cijele datoteke (0-${Math.floor(FPS - 1)} frameova).`;
         }
-        // NOVE VALIDACIJE za početak segmenta
+        // Validacija za timecode početka segmenta
         else if (isNaN(satiPocetakSegmenta) || satiPocetakSegmenta < 0 || isNaN(minutePocetakSegmenta) || minutePocetakSegmenta < 0 || minutePocetakSegmenta > 59 || isNaN(sekundePocetakSegmenta) || sekundePocetakSegmenta < 0 || sekundePocetakSegmenta > 59 || isNaN(frameoviPocetakSegmenta) || frameoviPocetakSegmenta < 0 || frameoviPocetakSegmenta >= FPS) {
-            errorMessage = `Molimo unesite ispravan početak glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
+            errorMessage = `Molimo unesite ispravan timecode početka glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
+        }
+        // Validacija za timecode kraja segmenta
+        else if (isNaN(satiKrajSegmenta) || satiKrajSegmenta < 0 || isNaN(minuteKrajSegmenta) || minuteKrajSegmenta < 0 || minuteKrajSegmenta > 59 || isNaN(sekundeKrajSegmenta) || sekundeKrajSegmenta < 0 || sekundeKrajSegmenta > 59 || isNaN(frameoviKrajSegmenta) || frameoviKrajSegmenta < 0 || frameoviKrajSegmenta >= FPS) {
+            errorMessage = `Molimo unesite ispravan timecode kraja glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
         }
         else if (isNaN(mjeraTakta) || mjeraTakta <= 0) {
             errorMessage = 'Molimo odaberite ispravnu mjeru takta (broj udaraca mora biti pozitivan).';
         }
-
-        // Izračun ukupnog trajanja glazbenog segmenta u frameovima
-        const ukupnoSekundiSegment = (satiSegment * 3600) + (minuteSegment * 60) + sekundeSegment;
-        const ukupnoFrameovaSegment = (ukupnoSekundiSegment * FPS) + frameoviSegment;
-
-        // Izračun ukupnog trajanja cijele fizičke datoteke u frameovima
-        const ukupnoSekundiCijele = (satiCijele * 3600) + (minuteCijele * 60) + sekundeCijele;
-        const ukupnoFrameovaCijele = (ukupnoSekundiCijele * FPS) + frameoviCijele;
-
-        // NOVO: Izračun početka segmenta u frameovima (originalni timecode)
-        const ukupnoSekundiPocetakSegmenta = (satiPocetakSegmenta * 3600) + (minutePocetakSegmenta * 60) + sekundePocetakSegmenta;
-        const ukupnoFrameovaPocetakSegmenta = (ukupnoSekundiPocetakSegmenta * FPS) + frameoviPocetakSegmenta;
-
-        if (ukupnoFrameovaSegment === 0) {
-            errorMessage = `Ukupno trajanje glazbenog segmenta ne može biti nula. Molimo unesite ispravno trajanje.`;
-        }
-        if (ukupnoFrameovaCijele === 0 && !errorMessage) {
+        // Logičke provjere
+        else if (ukupnoFrameovaCijele === 0) {
             errorMessage = `Ukupno trajanje fizičke datoteke ne može biti nula. Molimo unesite ispravno trajanje.`;
         }
-        // NOVO: Provjera da početak segmenta ne prelazi ukupnu duljinu
-        if (ukupnoFrameovaPocetakSegmenta >= ukupnoFrameovaCijele && !errorMessage) {
+        else if (ukupnoFrameovaPocetakSegmenta >= ukupnoFrameovaCijele) {
             errorMessage = `Početak glazbenog segmenta ne može biti veći ili jednak ukupnoj duljini fizičke datoteke.`;
         }
-        // NOVO: Provjera da kraj segmenta ne prelazi ukupnu duljinu
-        if ((ukupnoFrameovaPocetakSegmenta + ukupnoFrameovaSegment) > ukupnoFrameovaCijele && !errorMessage) {
-             errorMessage = `Kraj glazbenog segmenta (${formatFramesToTimecode(ukupnoFrameovaPocetakSegmenta + ukupnoFrameovaSegment, FPS)}) prelazi ukupnu duljinu fizičke datoteke.`;
+        else if (ukupnoFrameovaKrajSegmenta <= ukupnoFrameovaPocetakSegmenta) {
+            errorMessage = `Timecode kraja segmenta mora biti veći od timecodea početka segmenta.`;
+        }
+        else if (ukupnoFrameovaSegment === 0) {
+            errorMessage = `Glazbeni segment mora imati duljinu veću od nule.`;
+        }
+        else if (ukupnoFrameovaKrajSegmenta > ukupnoFrameovaCijele) {
+            errorMessage = `Timecode kraja segmenta (${formatFramesToTimecode(ukupnoFrameovaKrajSegmenta, FPS)}) prelazi ukupnu duljinu fizičke datoteke.`;
         }
 
 
@@ -232,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         brojBeatova = Math.round(brojBeatova);
 
         if (brojBeatova === 0) {
-            rezultatiDiv.innerHTML = `<p class="error-message">Nema dovoljno beatova za izračun. Molimo unesite dulje trajanje glazbenog segmenta ili veći fiksni (izmjereni) BPM.</p>`;
+            rezultatiDiv.innerHTML = `<p class="error-message">Nema dovoljno beatova za izračun. Molimo unesite dulji glazbeni segment ili veći fiksni (izmjereni) BPM.</p>`;
             return;
         }
 
@@ -261,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
             postotakTekst = `N/A`;
         }
 
+        // Izračun nove duljine segmenta
         let novaDuljinaFrameoviSegmentCalc = 0;
         if (fiksniBPM > 0) {
             const novaDuljinaSekundePrecizno = (brojBeatova / fiksniBPM) * 60;
@@ -268,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const formatiranaNovaDuljinaSegment = formatFramesToTimecode(novaDuljinaFrameoviSegmentCalc, FPS);
 
+        // Izračun nove ukupne duljine fizičke datoteke
         let novaDuljinaFrameoviCijeleCalc = ukupnoFrameovaCijele;
         if (postotakPrilagodbe !== 0) {
             novaDuljinaFrameoviCijeleCalc = Math.round(ukupnoFrameovaCijele * (1 + (postotakPrilagodbe / 100)));
@@ -284,6 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const noviKrajSegmentaFrameovi = noviPocetakSegmentaFrameovi + novaDuljinaFrameoviSegmentCalc;
         const formatiraniNoviKrajSegmenta = formatFramesToTimecode(noviKrajSegmentaFrameovi, FPS);
 
+        // Prikaz originalne izračunate duljine segmenta
+        const formatiranaIzracunataOriginalnaDuljinaSegmenta = formatFramesToTimecode(ukupnoFrameovaSegment, FPS);
+
         const sekundePoTakatu = Math.floor(frameoviPoTakatu / FPS);
         const preostaliFrameoviPoTakatu = frameoviPoTakatu % FPS;
         const formatiraniFrameoviPoTakatu =
@@ -295,11 +307,12 @@ document.addEventListener('DOMContentLoaded', () => {
         rezultatFrameoviPoBeatu.textContent = frameoviPoBeatu;
         rezultatFrameoviPoTakatu.textContent = `${frameoviPoTakatu} (${formatiraniFrameoviPoTakatu})`;
         rezultatPostotakPrilagodbe.textContent = postotakTekst;
+        rezultatIzracunataOriginalnaDuljinaSegmenta.textContent = formatiranaIzracunataOriginalnaDuljinaSegmenta; // NOVO
         rezultatNovaDuljinaSegment.textContent = formatiranaNovaDuljinaSegment;
         rezultatBrojBeatova.textContent = `Ukupni broj beatova za ovo trajanje (zaokruženo): ${brojBeatova}`;
         rezultatNovaDuljinaCijele.textContent = formatiranaNovaDuljinaCijele;
-        rezultatNoviPocetakSegmenta.textContent = formatiraniNoviPocetakSegmenta; // NOVO
-        rezultatNoviKrajSegmenta.textContent = formatiraniNoviKrajSegmenta;     // NOVO
+        rezultatNoviPocetakSegmenta.textContent = formatiraniNoviPocetakSegmenta;
+        rezultatNoviKrajSegmenta.textContent = formatiraniNoviKrajSegmenta;
     }
 
     // --- Postavljanje slušatelja događaja (Event Listeners) ---
@@ -307,21 +320,20 @@ document.addEventListener('DOMContentLoaded', () => {
     fpsSelect.addEventListener('change', izracunajMarkere);
     mjeraTaktaSelect.addEventListener('change', izracunajMarkere);
 
-    satiSegmentInput.addEventListener('input', izracunajMarkere);
-    minuteSegmentInput.addEventListener('input', izracunajMarkere);
-    sekundeSegmentInput.addEventListener('input', izracunajMarkere);
-    frameoviSegmentInput.addEventListener('input', izracunajMarkere);
-
     satiCijeleInput.addEventListener('input', izracunajMarkere);
     minuteCijeleInput.addEventListener('input', izracunajMarkere);
     sekundeCijeleInput.addEventListener('input', izracunajMarkere);
     frameoviCijeleInput.addEventListener('input', izracunajMarkere);
 
-    // Dodaj event listenere za nove inpute početka segmenta
     satiPocetakSegmentaInput.addEventListener('input', izracunajMarkere);
     minutePocetakSegmentaInput.addEventListener('input', izracunajMarkere);
     sekundePocetakSegmentaInput.addEventListener('input', izracunajMarkere);
     frameoviPocetakSegmentaInput.addEventListener('input', izracunajMarkere);
+
+    satiKrajSegmentaInput.addEventListener('input', izracunajMarkere);
+    minuteKrajSegmentaInput.addEventListener('input', izracunajMarkere);
+    sekundeKrajSegmentaInput.addEventListener('input', izracunajMarkere);
+    frameoviKrajSegmentaInput.addEventListener('input', izracunajMarkere);
 
     // Inicijalni proračun pri učitavanju stranice
     izracunajMarkere();
