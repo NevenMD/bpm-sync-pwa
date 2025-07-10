@@ -2,7 +2,7 @@
   "name": "BPM Sinkronizacija",
   "short_name": "BPM Sync",
   "description": "Kalkulator za sinkronizaciju BPM-a i frameova za video editing.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f4f7f6",
   "theme_color": "#0056b3",
