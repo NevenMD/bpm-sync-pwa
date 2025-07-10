@@ -161,9 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const minute = Math.floor(preostaliFrameoviNakonSati / (fps * 60));
         const preostaliFrameoviNakonMinuta = preostaliFrameoviNakonSati % (fps * 60);
         const sekunde = Math.floor(preostaliFrameoviNakonMinuta / fps);
+        // Round frames to nearest integer to avoid floating point issues
         const frameovi = Math.round(preostaliFrameoviNakonMinuta % fps);
 
-        const framePadding = 2; 
+        const framePadding = 2; // Edius example shows 2 digits for frames
 
         return `${String(sati).padStart(2, '0')}:` +
                `${String(minute).padStart(2, '0')}:` +
@@ -177,44 +178,65 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let edlContent = 'TITLE: BPM_Sync_Markers\r\n'; // CRLF za Windows
-        edlContent += `FCM: NON-DROP FRAME\r\n\r\n`; // CRLF za Windows, dva za praznu liniju
+        let edlContent = 'TITLE: BPM_Sync_Markers\r\n'; // CRLF
+        edlContent += `FCM: NON-DROP FRAME\r\n`; // CRLF
+        
+        // Add the specific null character and spacing structure Edius uses after FCM line
+        // Based on the provided EDL, it appears to be a pattern of nulls and spaces.
+        // It's incredibly hard to replicate exactly, so we'll approximate with what seems to be spaces.
+        // The Notepad++ "Save As" will be the real fixer for the specific nulls/padding.
+        edlContent += `\r\n`; // A blank line as seen in example after FCM
+        edlContent += `\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\r\n`; // Placeholder for potential nulls
+        edlContent += `\r\n`; // Another blank line before headers
+
+        // Main header line with exact spacing
+        edlContent += `EVENT       AX       DUMMY_CLIP  V     C        SOURCE IN           SOURCE OUT          DEST IN             DEST OUT\r\n`;
+        edlContent += `* COMMENT: Dummy clip for Edius compatibility\r\n`;
+        edlContent += `\r\n`; // Empty line after comment
 
         const fps = parseFloat(fpsSelect.value);
         const dummyClipDurationFrames = Math.round(fps * 10); 
         const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
-        // Reel ID za DUMMY_CLIP je AX (za 'Axillary', generička traka)
-        // Pažljivo postavljeni razmaci radi fiksne širine polja
-        // EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
-        // 001      AX       DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
+        // Dummy clip line - attempting to match Edius's fixed-width spacing
+        // 001      AX       DUMMY_CLIP  V     C        00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
         edlContent += `001      AX       DUMMY_CLIP  V     C        00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\r\n`;
         edlContent += `* COMMENT: Dummy clip for Edius compatibility\r\n`;
-        edlContent += `\r\n`; // Dodatna prazna linija nakon dummy klipa
-
+        edlContent += `\r\n`; // Additional blank line after dummy clip comment
 
         edlMarkers.forEach((marker, index) => {
-            const eventNum = String(index + 2).padStart(3, '0');
-            const reelId = 'V'; 
+            const eventNum = String(index + 2).padStart(3, '0'); // Start from 002 as 001 is dummy clip
+            const reelId = 'V'; // Based on your example
             const track = 'V'; 
             const type = 'M'; // Marker type
-            const clipName = 'MARKER_POINT'; // Max 12 znakova
-
+            const clipName = 'MARKER_POINT'; // Max 12 chars
             const markerTC = marker.timecode; 
             
-            // Pažljivo postavljeni razmaci i CRLF
+            // Attempting to replicate fixed-width spacing for markers
             // 002      V        MARKER_POINTV     M        00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
-            edlContent += `${eventNum}      ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\r\n`;
+            // Edius example: 002      V        MARKER_POINTV     M        00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
+            // Let's manually pad to match:
+            const line = 
+                `${eventNum}      ${reelId}        ${clipName}` + 
+                `${track}     ${type}        ` + // Extra spaces to align with Edius example
+                `${markerTC} ${markerTC} ${markerTC} ${markerTC}\r\n`;
+            edlContent += line;
             edlContent += `* COMMENT: ${marker.comment}\r\n`; 
-            edlContent += `\r\n`; // Dodatna prazna linija nakon svakog markera
+            edlContent += `\r\n`; // Additional blank line after each marker comment
         });
 
-        // Edius EDL završava praznim linijama (pretpostavka iz tvog primjera)
+        // Edius EDL seems to end with a few blank lines
         edlContent += `\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n`; 
         
-        // Stvara Blob s UTF-8 kodiranjem i CRLF
-        // Preglednici standardno preferiraju UTF-8.
-        const finalBlob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
+        // --- KLJUČNA PROMJENA: KORISTIMO UTF-16 LE S BOM-OM ---
+        const textEncoder = new TextEncoder('utf-16le'); // Specifikacija UTF-16 LE
+        const encodedContent = textEncoder.encode(edlContent); // Enkodiranje stringa
+
+        // Dodajemo BOM za UTF-16 LE (FF FE) na početak
+        const bom = new Uint8Array([0xFF, 0xFE]); 
+
+        // Spajamo BOM i kodirani sadržaj u jedan Blob
+        const finalBlob = new Blob([bom, encodedContent], { type: 'text/plain' }); // type 'text/plain' bez charseta
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.edl`;
 
@@ -243,201 +265,4 @@ document.addEventListener('DOMContentLoaded', () => {
         const satiPocetakSegmenta = parseInt(satiPocetakSegmentaInput.value) || 0;
         const minutePocetakSegmenta = parseInt(minutePocetakSegmentaInput.value) || 0;
         const sekundePocetakSegmenta = parseInt(sekundePocetakSegmentaInput.value) || 0;
-        const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
-
-        const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
-        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0; 
-        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0; 
-        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0; 
-
-        const mjeraTakta = parseInt(mjeraTaktaSelect.value);
-
-        fpsHelpText.textContent = `Trenutni FPS: ${FPS}`;
-        frameoviCijeleInput.setAttribute('max', Math.floor(FPS - 1));
-        frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(FPS - 1));
-        frameoviKrajSegmentaInput.setAttribute('max', Math.floor(FPS - 1));
-
-        const ukupnoSekundiCijele = (satiCijele * 3600) + (minuteCijele * 60) + sekundeCijele;
-        const ukupnoFrameovaCijele = (ukupnoSekundiCijele * FPS) + frameoviCijele;
-
-        const ukupnoSekundiPocetakSegmenta = (satiPocetakSegmenta * 3600) + (minutePocetakSegmenta * 60) + sekundePocetakSegmenta;
-        const ukupnoFrameovaPocetakSegmenta = (ukupnoSekundiPocetakSegmenta * FPS) + frameoviPocetakSegmenta;
-
-        const ukupnoSekundiKrajSegmenta = (satiKrajSegmenta * 3600) + (minuteKrajSegmenta * 60) + sekundeKrajSegmenta;
-        const ukupnoFrameovaKrajSegmenta = (ukupnoSekundiKrajSegmenta * FPS) + frameoviKrajSegmenta;
-
-        const ukupnoFrameovaSegment = ukupnoFrameovaKrajSegmenta - ukupnoFrameovaPocetakSegmenta;
-
-        let errorMessage = '';
-        if (isNaN(fiksniBPM) || fiksniBPM <= 0) {
-            errorMessage = 'Molimo unesite ispravan pozitivan broj za Fiksni (izmjereni) BPM glazbe.';
-        } else if (isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
-            errorMessage = 'Molimo unesite ispravan pozitivan broj za Ciljani BPM videa.';
-        } else if (isNaN(FPS) || FPS <= 0) {
-            errorMessage = 'Molimo odaberite ispravan FPS.';
-        }
-        else if (
-            typeof satiCijele !== 'number' || satiCijele < 0 ||
-            typeof minuteCijele !== 'number' || minuteCijele < 0 || minuteCijele > 59 ||
-            typeof sekundeCijele !== 'number' || sekundeCijele < 0 || sekundeCijele > 59 ||
-            typeof frameoviCijele !== 'number' || frameoviCijele < 0 || frameoviCijele >= FPS
-        ) {
-            errorMessage = `Molimo unesite ispravno trajanje cijele datoteke (0-${Math.floor(FPS - 1)} frameova).`;
-        }
-        else if (
-            typeof satiPocetakSegmenta !== 'number' || satiPocetakSegmenta < 0 ||
-            typeof minutePocetakSegmenta !== 'number' || minutePocetakSegmenta < 0 || minutePocetakSegmenta > 59 ||
-            typeof sekundePocetakSegmenta !== 'number' || sekundePocetakSegmenta < 0 || sekundePocetakSegmenta > 59 ||
-            typeof frameoviPocetakSegmenta !== 'number' || frameoviPocetakSegmenta < 0 || frameoviPocetakSegmenta >= FPS
-        ) {
-            errorMessage = `Molimo unesite ispravan timecode početka glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
-        }
-        else if (
-            typeof satiKrajSegmenta !== 'number' || satiKrajSegmenta < 0 ||
-            typeof minuteKrajSegmenta !== 'number' || minuteKrajSegmenta < 0 || minuteKrajSegmenta > 59 ||
-            typeof sekundeKrajSegmenta !== 'number' || sekundeKrajSegmenta < 0 || sekundeKrajSegmenta > 59 ||
-            typeof frameoviKrajSegmenta !== 'number' || frameoviKrajSegmenta < 0 || frameoviKrajSegmenta >= FPS
-        ) {
-            errorMessage = `Molimo unesite ispravan timecode kraja glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
-        }
-        else if (isNaN(mjeraTakta) || mjeraTakta <= 0) {
-            errorMessage = 'Molimo odaberite ispravnu mjeru takta (broj udaraca mora biti pozitivan).';
-        }
-        else if (isNaN(pragDriftaFrameovi) || pragDriftaFrameovi < 0) {
-            errorMessage = 'Molimo unesite ispravan prag drifta (pozitivan broj ili nula).';
-        }
-        else if (ukupnoFrameovaCijele <= 0) {
-            errorMessage = `Ukupno trajanje fizičke datoteke mora biti veće od nule. Molimo unesite ispravno trajanje.`;
-        }
-        else if (ukupnoFrameovaPocetakSegmenta >= ukupnoFrameovaCijele) {
-            errorMessage = `Početak glazbenog segmenta ne može biti veći ili jednak ukupnoj duljini fizičke datoteke.`;
-        }
-        else if (ukupnoFrameovaKrajSegmenta <= ukupnoFrameovaPocetakSegmenta) {
-            errorMessage = `Timecode kraja segmenta mora biti veći od timecodea početka segmenta.`;
-        }
-        else if (ukupnoFrameovaSegment <= 0) {
-            errorMessage = `Glazbeni segment mora imati duljinu veću od nule.`;
-        }
-        else if (ukupnoFrameovaKrajSegmenta > ukupnoFrameovaCijele) {
-            errorMessage = `Timecode kraja segmenta (${formatFramesToTimecode(ukupnoFrameovaKrajSegmenta, FPS)}) prelazi ukupnu duljinu fizičke datoteke.`;
-        }
-
-        let errorParagraph = inputPage.querySelector('.error-message');
-        if (errorParagraph) {
-            errorParagraph.remove(); 
-        }
-
-        if (errorMessage) {
-            errorParagraph = document.createElement('p');
-            errorParagraph.classList.add('error-message');
-            errorParagraph.textContent = errorMessage;
-            inputPage.insertBefore(errorParagraph, calculateButton);
-            showPage('input'); 
-            markeriZaIspravakDiv.innerHTML = ''; 
-            noMarkersMessage.style.display = 'none';
-            exportEdlButton.style.display = 'none'; 
-            edlMarkers = []; 
-            return; 
-        } else {
-            showPage('results');
-        }
-
-        const ciljTrajanjeSekundeSegment = ukupnoFrameovaSegment / FPS;
-        const ciljaniBrojBeatova = Math.round(ciljaniBPM * (ciljTrajanjeSekundeSegment / 60));
-
-        const stvarniTrajanjeSekundeSegment = ukupnoFrameovaSegment / FPS;
-        const stvarniBrojBeatova = Math.round(fiksniBPM * (stvarniTrajanjeSekundeSegment / 60));
-
-        const ciljanaDuljinaSegmentaFrameovi = (ciljaniBrojBeatova / ciljaniBPM) * 60 * FPS;
-        const stvarnaDuljinaSegmentaFrameoviFiksniBPM = (stvarniBrojBeatova / fiksniBPM) * 60 * FPS;
-
-        const ukupniDriftFrameovi = stvarnaDuljinaSegmentaFrameoviFiksniBPM - ciljanaDuljinaSegmentaFrameovi;
-
-        rezultatCiljaniBPM.textContent = ciljaniBPM.toFixed(4);
-        rezultatIzmjereniBPM.textContent = fiksniBPM.toFixed(4);
-        rezultatUkupanBrojBeatovaCilj.textContent = ciljaniBrojBeatova;
-        rezultatUkupanBrojBeatovaStvarno.textContent = stvarniBrojBeatova;
-        rezultatUkupniDrift.textContent = `${ukupniDriftFrameovi.toFixed(2)} frameova`;
-
-        let driftNapomena = '';
-        if (Math.abs(ukupniDriftFrameovi) < 0.1) {
-            driftNapomena = 'Gotovo savršeno usklađeno na kraju segmenta!';
-        } else if (ukupniDriftFrameovi > 0) {
-            driftNapomena = `Glazba kasni za video za ${ukupniDriftFrameovi.toFixed(2)} frameova na kraju segmenta. Trebat će je ubrzavati.`;
-        } else {
-            driftNapomena = `Glazba pretiče video za ${Math.abs(ukupniDriftFrameovi).toFixed(2)} frameova na kraju segmenta. Trebat će je usporavati.`;
-        }
-        rezultatNapomenaDrift.textContent = driftNapomena;
-
-        markeriZaIspravakDiv.innerHTML = '';
-        edlMarkers = [];
-        let korekcijePotrebne = false;
-
-        const ciljaniBeatDurationFrames = (60 / ciljaniBPM) * FPS;
-        const stvarniBeatDurationFrames = (60 / fiksniBPM) * FPS;
-
-        for (let i = 0; ; i++) {
-            const ocekivaniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * ciljaniBeatDurationFrames);
-            const stvarniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * stvarniBeatDurationFrames);
-
-            if (ocekivaniBeatTimeFrames > ukupnoFrameovaKrajSegmenta + FPS) {
-                break;
-            }
-
-            if (ocekivaniBeatTimeFrames >= ukupnoFrameovaPocetakSegmenta) {
-                currentDrift = stvarniBeatTimeFrames - ocekivaniBeatTimeFrames;
-
-                const isLastBeat = ocekivaniBeatTimeFrames + ciljaniBeatDurationFrames > ukupnoFrameovaKrajSegmenta;
-                if (Math.abs(currentDrift) >= pragDriftaFrameovi || (isLastBeat && Math.abs(currentDrift) > 0.1)) {
-                    korekcijePotrebne = true;
-                    const markerTimecode = formatFramesToTimecode(Math.round(ocekivaniBeatTimeFrames), FPS);
-                    const driftClass = currentDrift > 0 ? 'drift-positive' : 'drift-negative';
-                    const actionText = currentDrift > 0 ? 'Ubrzati' : 'Usporiti';
-                    const commentText = `ISPRAVAK_Beat_${i + 1}_Drift_${currentDrift > 0 ? '+' : ''}${currentDrift.toFixed(2)}f`;
-
-                    edlMarkers.push({
-                        timecode: markerTimecode,
-                        totalFrames: ocekivaniBeatTimeFrames,
-                        comment: commentText
-                    });
-
-                    const p = document.createElement('p');
-                    p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
-                    markeriZaIspravakDiv.appendChild(p);
-
-                    currentDrift = 0; 
-                }
-            }
-        }
-
-        if (!korekcijePotrebne && edlMarkers.length === 0) { 
-            noMarkersMessage.style.display = 'block';
-            exportEdlButton.style.display = 'none';
-        } else {
-            noMarkersMessage.style.display = 'none';
-            exportEdlButton.style.display = 'block'; 
-        }
-
-        document.querySelectorAll('#rezultati p').forEach(p => p.style.display = 'block');
-        document.querySelector('#rezultati h3').style.display = 'block';
-    }
-
-    calculateButton.addEventListener('click', izracunajMarkere);
-    
-    backButton.addEventListener('click', () => {
-        showPage('input');
-        markeriZaIspravakDiv.innerHTML = '';
-        noMarkersMessage.style.display = 'none';
-        exportEdlButton.style.display = 'none';
-        edlMarkers = [];
-    });
-    exportEdlButton.addEventListener('click', generateAndDownloadEDL);
-
-    fpsHelpText.textContent = `Trenutni FPS: ${parseFloat(fpsSelect.value)}`;
-    frameoviCijeleInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviKrajSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-
-    showPage('input');
-    exportEdlButton.style.display = 'none'; 
-});
+        const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value)
