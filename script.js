@@ -10,62 +10,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const sekundeCijeleInput = document.getElementById('sekundeCijele');
     const frameoviCijeleInput = document.getElementById('frameoviCijele');
 
-    // NOVI Inputi za timecode početka glazbenog segmenta
+    // Inputi za timecode početka glazbenog segmenta
     const satiPocetakSegmentaInput = document.getElementById('satiPocetakSegmenta');
     const minutePocetakSegmentaInput = document.getElementById('minutePocetakSegmenta');
     const sekundePocetakSegmentaInput = document.getElementById('sekundePocetakSegmenta');
     const frameoviPocetakSegmentaInput = document.getElementById('frameoviPocetakSegmenta');
 
-    // NOVI Inputi za timecode kraja glazbenog segmenta
+    // Inputi za timecode kraja glazbenog segmenta
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
     const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
     const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
     const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
-    // Elementi za prikaz rezultata
+    // Elementi za prikaz rezultata (DOHVAĆANJE SAMO JEDNOM NA POČETKU)
     const rezultatiDiv = document.getElementById('rezultati');
-    let rezultatVarijabilniBPM;
-    let rezultatFrameoviPoBeatu;
-    let rezultatFrameoviPoTakatu;
-    let rezultatPostotakPrilagodbe;
-    let rezultatIzracunataOriginalnaDuljinaSegmenta; // NOVO
-    let rezultatNovaDuljinaSegment;
-    let rezultatBrojBeatova;
-    let rezultatNovaDuljinaCijele;
-    let rezultatNoviPocetakSegmenta;
-    let rezultatNoviKrajSegmenta;
+    const rezultatVarijabilniBPM = document.getElementById('rezultatVarijabilniBPM');
+    const rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
+    const rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
+    const rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
+    const rezultatIzracunataOriginalnaDuljinaSegmenta = document.getElementById('rezultatIzracunataOriginalnaDuljinaSegmenta');
+    const rezultatNovaDuljinaSegment = document.getElementById('rezultatNovaDuljinaSegment');
+    const rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
+    const rezultatNovaDuljinaCijele = document.getElementById('rezultatNovaDuljinaCijele');
+    const rezultatNoviPocetakSegmenta = document.getElementById('rezultatNoviPocetakSegmenta');
+    const rezultatNoviKrajSegmenta = document.getElementById('rezultatNoviKrajSegmenta');
 
     const fpsHelpText = document.getElementById('fpsHelpText');
-
-    // --- Pomoćna funkcija za renderiranje HTML-a rezultata ---
-    function renderResultsHtml() {
-        rezultatiDiv.innerHTML = `
-            <h3>Izračunani rezultati:</h3>
-            <p><strong>Varijabilni BPM:</strong> <span class="precizan-broj" id="rezultatVarijabilniBPM"></span></p>
-            <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu"></span></p>
-            <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu"></span></p>
-            <p><strong>Postotak prilagodbe glazbe:</strong> <span id="rezultatPostotakPrilagodbe"></span></p>
-            <p><strong>Izračunata originalna duljina segmenta:</strong> <span id="rezultatIzracunataOriginalnaDuljinaSegmenta"></span></p>
-            <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljinaSegment"></span></p>
-            <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele"></span></p>
-            <p><strong>Novi timecode početka segmenta:</strong> <span id="rezultatNoviPocetakSegmenta"></span></p>
-            <p><strong>Novi timecode kraja segmenta:</strong> <span id="rezultatNoviKrajSegmenta"></span></p>
-            <p class="napomena" id="rezultatBrojBeatova"></p>
-        `;
-        // Ponovno dohvati reference jer je innerHTML prebrisan
-        rezultatVarijabilniBPM = document.getElementById('rezultatVarijabilniBPM');
-        rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
-        rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
-        rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
-        rezultatIzracunataOriginalnaDuljinaSegmenta = document.getElementById('rezultatIzracunataOriginalnaDuljinaSegmenta');
-        rezultatNovaDuljinaSegment = document.getElementById('rezultatNovaDuljinaSegment');
-        rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
-        rezultatNovaDuljinaCijele = document.getElementById('rezultatNovaDuljinaCijele');
-        rezultatNoviPocetakSegmenta = document.getElementById('rezultatNoviPocetakSegmenta');
-        rezultatNoviKrajSegmenta = document.getElementById('rezultatNoviKrajSegmenta');
-    }
-
-    renderResultsHtml(); // Inicijalno renderiranje
 
     // --- Funkcija za automatsko selektiranje teksta pri fokusu ---
     function selectOnFocus(event) {
@@ -217,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (ukupnoFrameovaKrajSegmenta <= ukupnoFrameovaPocetakSegmenta) {
             errorMessage = `Timecode kraja segmenta mora biti veći od timecodea početka segmenta.`;
         }
-        else if (ukupnoFrameovaSegment === 0) {
+        else if (ukupnoFrameovaSegment <= 0) {
             errorMessage = `Glazbeni segment mora imati duljinu veću od nule.`;
         }
         else if (ukupnoFrameovaKrajSegmenta > ukupnoFrameovaCijele) {
@@ -230,9 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (rezultatiDiv.querySelector('.error-message')) {
-            renderResultsHtml();
+        // Ako nema grešaka, osiguraj da su rezultati vidljivi i bez poruke o grešci
+        const currentErrorMessage = rezultatiDiv.querySelector('.error-message');
+        if (currentErrorMessage) {
+            currentErrorMessage.remove(); // Ukloni poruku o grešci ako postoji
         }
+        // Osiguraj da su svi rezultati elementi prisutni i vidljivi
+        // (Ovo bi trebalo biti ok jer se dohvaćaju samo jednom na početku)
+        rezultatiDiv.style.display = 'block'; // Pokaži rezultate div ako je bio sakriven zbog greške
 
         const trajanjeUMinutamaSegment = ukupnoFrameovaSegment / FPS / 60;
         let brojBeatova = fiksniBPM * trajanjeUMinutamaSegment;
@@ -251,23 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let frameoviPoTakatu = frameoviPoBeatu * mjeraTakta;
         frameoviPoTakatu = Math.round(frameoviPoTakatu);
 
-        let postotakPrilagodbe = 0;
-        let postotakTekst = '';
-
-        if (varijabilniBPM !== 0) {
-            postotakPrilagodbe = ((varijabilniBPM - fiksniBPM) / fiksniBPM) * 100;
-
-            if (postotakPrilagodbe > 0) {
-                postotakTekst = `Produžiti za ${postotakPrilagodbe.toFixed(2)}%`;
-            } else if (postotakPrilagodbe < 0) {
-                postotakTekst = `Skratiti za ${Math.abs(postotakPrilagodbe).toFixed(2)}%`;
-            } else {
-                postotakTekst = `Nije potrebna prilagodba (0.00%)`;
-            }
-        } else {
-            postotakTekst = `N/A`;
-        }
-
         // Izračun nove duljine segmenta
         let novaDuljinaFrameoviSegmentCalc = 0;
         if (fiksniBPM > 0) {
@@ -276,24 +234,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const formatiranaNovaDuljinaSegment = formatFramesToTimecode(novaDuljinaFrameoviSegmentCalc, FPS);
 
-        // Izračun nove ukupne duljine fizičke datoteke
-        let novaDuljinaFrameoviCijeleCalc = ukupnoFrameovaCijele;
-        if (postotakPrilagodbe !== 0) {
-            novaDuljinaFrameoviCijeleCalc = Math.round(ukupnoFrameovaCijele * (1 + (postotakPrilagodbe / 100)));
+        // IZRAČUN FAKTORA SKALIRANJA: Koliko se glazbeni segment promijenio
+        const scalingFactor = ukupnoFrameovaSegment > 0 ? (novaDuljinaFrameoviSegmentCalc / ukupnoFrameovaSegment) : 1; // Spriječi dijeljenje s nulom
+
+        let postotakPrilagodbe = (scalingFactor - 1) * 100;
+        let postotakTekst = '';
+
+        if (postotakPrilagodbe > 0) {
+            postotakTekst = `Produžiti za ${postotakPrilagodbe.toFixed(2)}%`;
+        } else if (postotakPrilagodbe < 0) {
+            postotakTekst = `Skratiti za ${Math.abs(postotakPrilagodbe).toFixed(2)}%`;
+        } else {
+            postotakTekst = `Nije potrebna prilagodba (0.00%)`;
         }
+
+        // Izračun nove ukupne duljine fizičke datoteke koristeći SCALING FACTOR
+        const novaDuljinaFrameoviCijeleCalc = Math.round(ukupnoFrameovaCijele * scalingFactor);
         const formatiranaNovaDuljinaCijele = formatFramesToTimecode(novaDuljinaFrameoviCijeleCalc, FPS);
 
-        // --- NOVO: Izračun novih timecodea za početak i kraj segmenta ---
-        let noviPocetakSegmentaFrameovi = ukupnoFrameovaPocetakSegmenta;
-        if (postotakPrilagodbe !== 0) {
-            noviPocetakSegmentaFrameovi = Math.round(ukupnoFrameovaPocetakSegmenta * (1 + (postotakPrilagodbe / 100)));
-        }
+        // Izračun novih timecodea za početak i kraj segmenta koristeći SCALING FACTOR
+        const noviPocetakSegmentaFrameovi = Math.round(ukupnoFrameovaPocetakSegmenta * scalingFactor);
         const formatiraniNoviPocetakSegmenta = formatFramesToTimecode(noviPocetakSegmentaFrameovi, FPS);
 
         const noviKrajSegmentaFrameovi = noviPocetakSegmentaFrameovi + novaDuljinaFrameoviSegmentCalc;
         const formatiraniNoviKrajSegmenta = formatFramesToTimecode(noviKrajSegmentaFrameovi, FPS);
 
-        // Prikaz originalne izračunate duljine segmenta
         const formatiranaIzracunataOriginalnaDuljinaSegmenta = formatFramesToTimecode(ukupnoFrameovaSegment, FPS);
 
         const sekundePoTakatu = Math.floor(frameoviPoTakatu / FPS);
@@ -303,11 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
             `${String(preostaliFrameoviPoTakatu).padStart(formatFramesToTimecode(0, FPS).split(':')[3].length, '0')}`;
 
 
+        // AŽURIRANJE TEKSTA ELEMENATA, NE PREPISIVANJE CIJELOG DIV-a
         rezultatVarijabilniBPM.textContent = varijabilniBPM.toFixed(4);
         rezultatFrameoviPoBeatu.textContent = frameoviPoBeatu;
         rezultatFrameoviPoTakatu.textContent = `${frameoviPoTakatu} (${formatiraniFrameoviPoTakatu})`;
         rezultatPostotakPrilagodbe.textContent = postotakTekst;
-        rezultatIzracunataOriginalnaDuljinaSegmenta.textContent = formatiranaIzracunataOriginalnaDuljinaSegmenta; // NOVO
+        rezultatIzracunataOriginalnaDuljinaSegmenta.textContent = formatiranaIzracunataOriginalnaDuljinaSegmenta;
         rezultatNovaDuljinaSegment.textContent = formatiranaNovaDuljinaSegment;
         rezultatBrojBeatova.textContent = `Ukupni broj beatova za ovo trajanje (zaokruženo): ${brojBeatova}`;
         rezultatNovaDuljinaCijele.textContent = formatiranaNovaDuljinaCijele;
