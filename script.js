@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
     const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
-    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
+    const sekundeKrajSegmentaInput = document = document.getElementById('sekundeKrajSegmenta');
     const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
     const fpsHelpText = document.getElementById('fpsHelpText');
@@ -207,31 +207,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let edlContent = 'TITLE: BPM_Sync_Markers\n';
         edlContent += `FCM: NON-DROP FRAME\n\n`; // Obavezno prazna linija nakon FCM
 
-        // **NOVO: Dodavanje fiktivnog prvog događaja za Edius kompatibilnost**
         const fps = parseFloat(fpsSelect.value);
-        const dummyClipDuration = Math.round(fps * 10); // Npr. 10 sekundi trajanja
-        const dummyClipOut = formatFramesToTimecode(dummyClipDuration, fps);
+        const dummyClipDurationFrames = Math.round(fps * 10); // Npr. 10 sekundi trajanja
+        const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
-        // Formatiranje linije s razmacima za Edius. Broj razmaka je ključan.
-        //   EventNum ReelID  ClipName     Track Type   Source In  Source Out Dest In    Dest Out
-        //   001     AX       DUMMY_CLIP  V     C      00:00:00:00 00:00:00:10 00:00:00:00 00:00:00:10
-        edlContent += `001  AX       DUMMY_CLIP  V     C      00:00:00:00 ${dummyClipOut} 00:00:00:00 ${dummyClipOut}\n`;
+        // **NOVO: Reel ID postavljen na 'V' i provjereni razmaci**
+        //   EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
+        //   001      V      DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
+        edlContent += `001      V      DUMMY_CLIP  V     C    00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
 
         edlMarkers.forEach((marker, index) => {
             // Indexiranje kreće od 2 jer je 001 dummy klip
             const eventNum = String(index + 2).padStart(3, '0'); 
-            const reelId = 'AX';
-            const track = 'V';
+            const reelId = 'V'; // Promijenjeno u 'V' za Edius kompatibilnost
+            const track = 'V'; 
             const type = 'C'; 
-            const clipName = 'DUMMY_MARKER'; // Može biti i "DUMMY_CLIP" ako je isto za sve
+            const clipName = 'MARKER_CLIP'; // Malo drugačije ime za marker klip
 
-            // sourceOut i destOut neka budu marker.totalFrames + 1 frame za trajanje od 1 frame
-            const sourceOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
-            const destOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
+            const sourceOutTC = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
+            const destOutTC = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
 
-            // Prilagođeno zbog dodavanja clipNamea i usklađivanja razmaka
-            edlContent += `${eventNum}  ${reelId}     ${clipName}  ${track}     ${type}    ${marker.timecode} ${sourceOut} ${marker.timecode} ${destOut}\n`;
-            edlContent += `* COMMENT: ${marker.comment}\n`; // Standardni format za komentare
+            // Razmaci su iznimno precizno postavljeni.
+            // Važno: 3 razmaka nakon eventNum, 6 razmaka nakon Reel ID, 2 nakon ClipName, 5 nakon Track, 4 nakon Type
+            //                                                          12345678901   12345678901   12345678901   12345678901
+            edlContent += `${eventNum}   ${reelId}      ${clipName}  ${track}     ${type}    ${marker.timecode} ${sourceOutTC} ${marker.timecode} ${destOutTC}\n`;
+            edlContent += `* COMMENT: ${marker.comment}\n`; 
         });
 
         const blob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
