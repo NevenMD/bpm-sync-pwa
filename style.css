@@ -8,54 +8,54 @@ body {
     align-items: flex-start;
     min-height: 100vh;
     margin: 0;
-    padding: 10px; /* Smanjen padding na body */
+    padding: 10px;
     box-sizing: border-box;
 }
 
 .container {
     background-color: #ffffff;
-    padding: 20px; /* Smanjen padding na kontejneru */
+    padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    max-width: 500px; /* Smanjena maksimalna širina */
+    max-width: 500px;
     width: 100%;
-    margin-top: 20px; /* Smanjen razmak od vrha */
+    margin-top: 20px;
 }
 
 h1 {
     color: #2c3e50;
     text-align: center;
-    margin-bottom: 20px; /* Smanjen margin-bottom */
-    font-size: 1.8em; /* Malo smanjen naslov */
+    margin-bottom: 20px;
+    font-size: 1.8em;
 }
 
 h3 {
     color: #34495e;
-    margin-top: 15px; /* Smanjen margin-top */
-    margin-bottom: 8px; /* Smanjen margin-bottom */
-    font-size: 1.1em; /* Malo smanjen podnaslov */
+    margin-top: 15px;
+    margin-bottom: 8px;
+    font-size: 1.1em;
 }
 
 /* Stil za input grupe */
 .input-group {
-    margin-bottom: 15px; /* Smanjen margin-bottom */
+    margin-bottom: 15px;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 5px; /* Smanjen margin-bottom */
+    margin-bottom: 5px;
     font-weight: bold;
     color: #555;
-    font-size: 0.95em; /* Malo smanjen font labela */
+    font-size: 0.95em;
 }
 
 .input-group input[type="number"],
 .input-group select {
     width: 100%;
-    padding: 8px 10px; /* Smanjen padding inputa */
+    padding: 8px 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    font-size: 0.9em; /* Smanjen font inputa */
+    font-size: 0.9em;
     box-sizing: border-box;
     transition: border-color 0.3s ease;
 }
@@ -64,34 +64,33 @@ h3 {
 .input-group select:focus {
     border-color: #007bff;
     outline: none;
-    box-shadow: 0 0 0 3px rgba
-(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
 .help-text {
-    font-size: 0.8em; /* Smanjen font help teksta */
+    font-size: 0.8em;
     color: #777;
-    margin-top: 3px; /* Smanjen margin-top */
-    margin-bottom: 8px; /* Smanjen margin-bottom */
+    margin-top: 3px;
+    margin-bottom: 8px;
 }
 
 /* Stil za polja trajanja */
 .duration-fields {
     display: flex;
     align-items: center;
-    gap: 3px; /* Još manji razmak između polja */
+    gap: 3px;
 }
 
 .duration-fields input[type="number"] {
     width: 25%;
     text-align: center;
-    padding: 7px 5px; /* Dodatno smanjen padding */
-    font-size: 0.9em; /* Dodatno smanjen font */
+    padding: 7px 5px;
+    font-size: 0.9em;
 }
 
 .duration-fields .colon {
     font-weight: bold;
-    font-size: 1.1em; /* Malo smanjen kolon */
+    font-size: 1.1em;
     color: #777;
 }
 
@@ -100,15 +99,15 @@ h3 {
     background-color: #e9f7f0;
     border: 1px solid #d4edda;
     border-radius: 8px;
-    padding: 15px; /* Smanjen padding rezultata */
-    margin-top: 15px; /* Smanjen margin-top */
+    padding: 15px;
+    margin-top: 15px;
     color: #155724;
 }
 
 .results-box p {
-    margin-bottom: 8px; /* Smanjen margin-bottom */
-    line-height: 1.4; /* Malo smanjen line-height */
-    font-size: 0.9em; /* Smanjen font rezultata */
+    margin-bottom: 8px;
+    line-height: 1.4;
+    font-size: 0.9em;
 }
 
 .results-box p strong {
@@ -121,38 +120,79 @@ h3 {
 }
 
 .results-box .napomena {
-    font-size: 0.8em; /* Smanjen font napomene */
+    font-size: 0.8em;
     color: #6a008a;
     font-style: italic;
-    margin-top: 10px; /* Smanjen margin-top */
+    margin-top: 10px;
 }
 
 .error-message {
     color: #dc3545;
     font-weight: bold;
-    margin-top: 10px; /* Smanjen margin-top */
+    margin-top: 10px;
     text-align: center;
-    font-size: 0.9em; /* Smanjen font error poruke */
-    margin-bottom: 10px; /* Dodan margin-bottom */
+    font-size: 0.9em;
+    margin-bottom: 10px;
 }
+
+/* Horizontalna linija za razdvajanje sekcija u rezultatima */
+hr {
+    border: none;
+    border-top: 1px solid #cce5ff; /* Svijetloplava linija */
+    margin: 20px 0;
+}
+
+/* Stil za popis markera */
+.markers-list {
+    margin-top: 10px;
+    background-color: #f0f8ff; /* Vrlo svijetlo plava pozadina */
+    border: 1px solid #b3d9ff;
+    border-radius: 5px;
+    padding: 10px;
+    max-height: 250px; /* Ograniči visinu i omogući skrolanje */
+    overflow-y: auto;
+    font-size: 0.85em;
+    line-height: 1.6;
+}
+
+.markers-list p {
+    margin: 5px 0;
+    padding: 3px 5px;
+    border-bottom: 1px dotted #e0f0ff;
+}
+
+.markers-list p:last-child {
+    border-bottom: none;
+}
+
+.markers-list .drift-positive {
+    color: #dc3545; /* Crvena za pozitivni drift (glazba kasni) */
+    font-weight: bold;
+}
+
+.markers-list .drift-negative {
+    color: #28a745; /* Zelena za negativni drift (glazba pretiče) */
+    font-weight: bold;
+}
+
 
 /* Gumb */
 button {
     background-color: #007bff;
     color: white;
-    padding: 10px 20px; /* Smanjen padding gumba */
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
-    font-size: 1em; /* Malo smanjen font gumba */
+    font-size: 1em;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
     width: 100%;
-    margin-top: 20px; /* Smanjen margin-top */
+    margin-top: 20px;
 }
 
 button:hover {
     background-color: #0056b3;
-    transform: translateY(-1px); /* Manji pomak */
+    transform: translateY(-1px);
 }
 
 button:active {
@@ -171,17 +211,17 @@ button:active {
 /* Media Queries za manje ekrane (dodatne optimizacije za mobitele) */
 @media (max-width: 480px) {
     .container {
-        padding: 15px; /* Još manji padding na vrlo malim ekranima */
-        margin-top: 10px; /* Još manji razmak od vrha */
+        padding: 15px;
+        margin-top: 10px;
     }
 
     h1 {
-        font-size: 1.6em; /* Još manji naslov */
+        font-size: 1.6em;
         margin-bottom: 15px;
     }
 
     h3 {
-        font-size: 1em; /* Još manji podnaslovi */
+        font-size: 1em;
         margin-top: 10px;
         margin-bottom: 5px;
     }
@@ -192,17 +232,17 @@ button:active {
 
     .input-group input[type="number"],
     .input-group select {
-        padding: 7px 8px; /* Još manji padding inputa */
-        font-size: 0.85em; /* Još manji font inputa */
+        padding: 7px 8px;
+        font-size: 0.85em;
     }
 
     .help-text {
-        font-size: 0.75em; /* Još manji help tekst */
+        font-size: 0.75em;
     }
 
     .duration-fields input[type="number"] {
-        width: 23%; /* Malo smanjenje za vrlo male ekrane */
-        padding: 5px 3px; /* Minimalni padding */
+        width: 23%;
+        padding: 5px 3px;
         font-size: 0.85em;
     }
     .duration-fields .colon {
@@ -210,21 +250,26 @@ button:active {
     }
 
     .results-box {
-        padding: 12px; /* Još manji padding rezultata */
+        padding: 12px;
     }
 
     .results-box p {
-        font-size: 0.85em; /* Još manji font rezultata */
+        font-size: 0.85em;
         margin-bottom: 6px;
     }
 
     .results-box .napomena {
-        font-size: 0.75em; /* Još manji font napomene */
+        font-size: 0.75em;
+    }
+
+    .markers-list {
+        font-size: 0.8em; /* Manji font za popis markera na mobitelu */
+        max-height: 200px; /* Malo manja visina za skrolanje na mobitelu */
     }
 
     button {
-        padding: 8px 15px; /* Još manji padding gumba */
-        font-size: 0.95em; /* Još manji font gumba */
+        padding: 8px 15px;
+        font-size: 0.95em;
         margin-top: 15px;
     }
 }

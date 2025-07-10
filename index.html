@@ -24,8 +24,13 @@
 
         <div id="input-page" class="page active">
             <div class="input-group">
-                <label for="fiksniBPM">Fiksni (izmjereni) BPM:</label>
+                <label for="fiksniBPM">Fiksni (izmjereni) BPM glazbe:</label>
                 <input type="number" id="fiksniBPM" value="120" step="0.001">
+            </div>
+
+            <div class="input-group">
+                <label for="ciljaniBPM">Ciljani BPM za video (ako znate, inače isto kao izmjereni):</label>
+                <input type="number" id="ciljaniBPM" value="120" step="0.001">
             </div>
 
             <div class="input-group">
@@ -43,8 +48,8 @@
             </div>
 
             <div class="input-group duration-group">
-                <h3>1. Ukupna duljina fizičke datoteke</h3>
-                <p class="help-text">Unesite **ukupno trajanje audio datoteke** (HH:MM:SS:FF) onako kako je vidite u svom video editoru, uključujući sve praznine.</p>
+                <h3>1. Ukupna duljina fizičke datoteke (Video)</h3>
+                <p class="help-text">Unesite **ukupno trajanje video datoteke** (HH:MM:SS:FF).</p>
                 <div class="duration-fields">
                     <input type="number" id="satiCijele" value="0" min="0">
                     <span class="colon">:</span>
@@ -58,8 +63,8 @@
             </div>
 
             <div class="input-group duration-group">
-                <h3>2. Timecode početka glazbenog segmenta</h3>
-                <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** unutar fizičke datoteke od kojeg počinje glazbeni segment (npr. prvi takt, prvi beat).</p>
+                <h3>2. Timecode početka glazbenog segmenta (Video Timecode)</h3>
+                <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** u videu od kojeg počinje glazbeni segment (npr. prvi takt, prvi beat).</p>
                 <div class="duration-fields">
                     <input type="number" id="satiPocetakSegmenta" value="0" min="0">
                     <span class="colon">:</span>
@@ -72,8 +77,8 @@
             </div>
 
             <div class="input-group duration-group">
-                <h3>3. Timecode kraja glazbenog segmenta</h3>
-                <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** unutar fizičke datoteke do kojeg traje glazbeni segment (npr. kraj zadnjeg takta, zadnjeg beata).</p>
+                <h3>3. Timecode kraja glazbenog segmenta (Video Timecode)</h3>
+                <p class="help-text">Unesite **timecode (HH:MM:SS:FF)** u videu do kojeg traje glazbeni segment (npr. kraj zadnjeg takta, zadnjeg beata).</p>
                 <div class="duration-fields">
                     <input type="number" id="satiKrajSegmenta" value="0" min="0">
                     <span class="colon">:</span>
@@ -95,22 +100,31 @@
                 </select>
             </div>
 
+             <div class="input-group">
+                <label for="pragDriftaFrameovi">Dopušteni drift (u frameovima) prije korekcije:</label>
+                <input type="number" id="pragDriftaFrameovi" value="1" min="0" step="1">
+            </div>
+
             <button id="calculateButton">Izračunaj</button>
         </div>
 
         <div id="results-page" class="page">
             <div id="rezultati" class="results-box">
-                <h3>Izračunani rezultati:</h3>
-                <p><strong>Varijabilni BPM:</strong> <span class="precizan-broj" id="rezultatVarijabilniBPM">0.0000</span></p>
-                <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu">0</span></p>
-                <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu">0</span></p>
-                <p><strong>Postotak prilagodbe glazbene datoteke:</strong> <span id="rezultatPostotakPrilagodbe">0.00%</span></p>
-                <p><strong>Izračunata originalna duljina segmenta:</strong> <span id="rezultatIzracunataOriginalnaDuljinaSegmenta">00:00:00:00</span></p>
-                <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljinaSegment">00:00:00:00</span></p>
-                <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele">00:00:00:00</span></p>
-                <p><strong>Novi timecode početka segmenta:</strong> <span id="rezultatNoviPocetakSegmenta">00:00:00:00</span></p>
-                <p><strong>Novi timecode kraja segmenta:</strong> <span id="rezultatNoviKrajSegmenta">00:00:00:00</span></p>
-                <p class="napomena" id="rezultatBrojBeatova">Ukupni broj beatova za ovo trajanje (zaokruženo): 0</p>
+                <h3>Pregled sinkronizacije:</h3>
+                <p><strong>Ciljani BPM (za video):</strong> <span class="precizan-broj" id="rezultatCiljaniBPM">0.0000</span></p>
+                <p><strong>Izmjereni (stvarni) BPM glazbe:</strong> <span class="precizan-broj" id="rezultatIzmjereniBPM">0.0000</span></p>
+                <p><strong>Ukupan broj ciljanih beatova u segmentu:</strong> <span id="rezultatUkupanBrojBeatovaCilj">0</span></p>
+                <p><strong>Ukupan broj stvarnih beatova u segmentu (izmjereni BPM):</strong> <span id="rezultatUkupanBrojBeatovaStvarno">0</span></p>
+                <p><strong>Ukupni drift na kraju segmenta:</strong> <span id="rezultatUkupniDrift">0</span></p>
+                <p class="napomena" id="rezultatNapomenaDrift"></p>
+                <hr>
+                <h3>Preporučene točke za ispravak tempa:</h3>
+                <p class="help-text">Ovo su timecodeovi u videu gdje glazba odstupa za više od dopuštenog drifta. Na ovim točkama trebali biste razmisliti o mikro-prilagodbi tempa glazbe u svom DAW-u/editoru.</p>
+                <div id="markeriZaIspravak" class="markers-list">
+                    </div>
+                <p id="noMarkersMessage" class="error-message" style="display:none;">Nisu potrebne korekcije tempa unutar dopuštenog drifta, ili nema dovoljno podataka za izračun.</p>
+
+                <button id="exportEdlButton">Generiraj EDL</button>
             </div>
             <button id="backButton">Natrag na unos</button>
         </div>
