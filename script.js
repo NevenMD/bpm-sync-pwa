@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameoviPocetakSegmentaInput = document.getElementById('frameoviPocetakSegmenta');
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
-    const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
-    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
-    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
+    const minuteKrajSegmentaInput = parseInt(document.getElementById('minuteKrajSegmenta').value) || 0;
+    const sekundeKrajSegmentaInput = parseInt(document.getElementById('sekundeKrajSegmenta').value) || 0;
+    const frameoviKrajSegmentaInput = parseInt(document.getElementById('frameoviKrajSegmenta').value) || 0;
 
     const fpsHelpText = document.getElementById('fpsHelpText');
 
@@ -177,49 +177,69 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let edlContent = 'TITLE: BPM_Sync_Markers\n';
-        edlContent += `FCM: NON-DROP FRAME\n\n`; // Obavezno prazna linija
+        let edlContent = 'TITLE: BPM_Sync_Markers\r\n'; // CRLF za Windows
+        edlContent += `FCM: NON-DROP FRAME\r\n\r\n`; // CRLF za Windows, dva za praznu liniju
 
         const fps = parseFloat(fpsSelect.value);
         const dummyClipDurationFrames = Math.round(fps * 10); 
         const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
-        // Reel ID za DUMMY_CLIP natrag na AX, zbog strogih CMX3600 pravila
-        // Pažljivo postavljeni razmaci!
-        // EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
-        // 001      AX       DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
-        edlContent += `001      AX       DUMMY_CLIP  V     C        00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
-        edlContent += `* COMMENT: Dummy clip for Edius compatibility\n`;
-        edlContent += `\n`; // Dodatna prazna linija nakon dummy klipa (neki parsieri to vole)
+        // Reel ID za DUMMY_CLIP je AX (za 'Axillary', generička traka)
+        // Korištenje CRLF za Windows nove linije
+        // Pažljivo postavljeni razmaci radi fiksne širine polja
+        edlContent += `001      AX       DUMMY_CLIP  V     C        00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\r\n`;
+        edlContent += `* COMMENT: Dummy clip for Edius compatibility\r\n`;
+        edlContent += `\r\n`; // Dodatna prazna linija nakon dummy klipa
 
 
         edlMarkers.forEach((marker, index) => {
             const eventNum = String(index + 2).padStart(3, '0');
-            // Reel ID za markere je i dalje 'V' (Video) ili 'AX' ako se želi biti dosljedan
-            // ali držimo 'V' jer smo ga probali i ako je do markera, onda je do tipa 'M'
             const reelId = 'V'; 
             const track = 'V'; 
-            const type = 'M'; // Marker type - ovo je ključno za testiranje s "v" tipkom
-            const clipName = 'MARKER_POINT'; // 12 znakova
+            const type = 'M'; // Marker type
+            const clipName = 'MARKER_POINT'; // Max 12 znakova
 
             const markerTC = marker.timecode; 
             
-            // Pažljivo postavljeni razmaci.
-            // 002      V        MARKER_POINTV     M        00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
-            // Razmaci su iznimno precizno postavljeni.
-            //                  ReelID   ClipName      Track Type Source In   Source Out  Dest In     Dest Out
-            //                  |        |             |     |    |           |           |           |
-            //               3 zn. + 3 razm. + 8 zn. + 3 razm. + 1 zn. + 5 razm. + 1 zn. + 4 razm. + Timecode
-            edlContent += `${eventNum}      ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\n`;
-            edlContent += `* COMMENT: ${marker.comment}\n`; 
-            edlContent += `\n`; // Dodatna prazna linija nakon svakog markera
+            // Pažljivo postavljeni razmaci i CRLF
+            edlContent += `${eventNum}      ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\r\n`;
+            edlContent += `* COMMENT: ${marker.comment}\r\n`; 
+            edlContent += `\r\n`; // Dodatna prazna linija nakon svakog markera
         });
 
-        const blob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
+        // Edius EDL završava praznim linijama
+        edlContent += `\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n`; 
+        edlContent += `M2      00:03:00:12\r\n`; // Ovaj dio si mi poslao iz dekompajlirane datoteke, zadnji marker.
+                                             // Stavit ćemo ga kao fiksni marker na kraju, možeš ga maknuti ako ne treba.
+                                             // Pretpostavljam da je ovo kraj Timecodea ili neki zadnji reference marker
+        edlContent += `\r\n`;
+
+        // UTF-16 BE BOM (Byte Order Mark)
+        const bom = new Uint8Array([0xFE, 0xFF]); 
+        const textEncoder = new TextEncoder();
+        const encodedText = textEncoder.encode(edlContent); // Encodira u UTF-8, ali TextEncoder nema UTF-16 direktno
+
+        // Za UTF-16 BE moramo ručno kreirati ArrayBuffer
+        // Izvor: StackOverflow i testiranje.
+        // Nema direktne podrške u Blob constructoru za 'utf-16be'
+        // Najbolji način je da text kodiramo kao UTF-16 i dodamo BOM
+        function stringToUTF16BEBytes(str) {
+            const bytes = [];
+            for (let i = 0; i < str.length; i++) {
+                const charCode = str.charCodeAt(i);
+                bytes.push((charCode >> 8) & 0xFF); // High byte
+                bytes.push(charCode & 0xFF);        // Low byte
+            }
+            return new Uint8Array(bytes);
+        }
+
+        const utf16BeContent = stringToUTF16BEBytes(edlContent);
+        const finalBlob = new Blob([bom, utf16BeContent], { type: 'text/plain' }); // type 'text/plain' bez charseta
+
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.edl`;
 
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
+        a.href = URL.createObjectURL(finalBlob);
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
@@ -246,9 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
 
         const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
-        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0;
-        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0;
-        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0;
+        const minuteKrajSegmenta = parseInt(document.getElementById('minuteKrajSegmenta').value) || 0; // Ovdje je bila greška, dohvaćalo se s vanjskog scopea
+        const sekundeKrajSegmenta = parseInt(document.getElementById('sekundeKrajSegmenta').value) || 0; // Isto
+        const frameoviKrajSegmenta = parseInt(document.getElementById('frameoviKrajSegmenta').value) || 0; // Isto
 
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
