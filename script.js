@@ -193,12 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Korištenje Unix-stila za novi red, kao u Edius primjeru
-        const LF = '\n';
+        // Koristim Windows-style za novi red (CRLF) jer je to prisutno u Edius primjeru i vašem izlazu.
+        const CRLF = '\r\n';
 
-        let xmlContent = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>${LF}`;
-        xmlContent += `<edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">${LF}`;
-        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${LF}`;
+        let xmlContent = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>${CRLF}`;
+        xmlContent += `<edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">${CRLF}`;
+        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${CRLF}`;
 
         // Generiranje datuma kreiranja
         const currentDate = new Date();
@@ -212,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutes = String(currentDate.getMinutes()).padStart(2, '0');
         const seconds = String(currentDate.getSeconds()).padStart(2, '0');
 
-        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${LF}`;
+        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`;
 
-        xmlContent += `\t<edius:markerLists>${LF}`;
+        xmlContent += `\t<edius:markerLists>${CRLF}`;
 
         edlMarkers.forEach((marker, index) => {
             const markerNo = index + 1;
@@ -230,33 +230,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentXml = `<edius:comment>${escapeXml(marker.comment)}</edius:comment>`;
             }
 
-            xmlContent += `\t\t<edius:marker>${LF}`;
-            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${LF}`;
-            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${LF}`;
-            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${LF}`;
-            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${LF}`;
-            xmlContent += `\t\t\t${commentXml}${LF}`;
-            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${LF}`;
-            xmlContent += `\t\t</edius:marker>${LF}`;
+            xmlContent += `\t\t<edius:marker>${CRLF}`;
+            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${CRLF}`;
+            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${CRLF}`;
+            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${CRLF}`;
+            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${CRLF}`;
+            xmlContent += `\t\t\t${commentXml}${CRLF}`;
+            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${CRLF}`;
+            xmlContent += `\t\t</edius:marker>${CRLF}`;
         });
 
-        xmlContent += `\t</edius:markerLists>${LF}`;
-        xmlContent += `</edius:markerInfo>${LF}`;
+        xmlContent += `\t</edius:markerLists>${CRLF}`;
+        xmlContent += `</edius:markerInfo>${CRLF}`;
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.xml`;
 
-        // Vraćeno eksplicitno dodavanje BOM-a za UTF-16 Little Endian
-        // Ovo bi trebalo pomoći programima kao što je Notepad++ (i Edius) da ispravno prepoznaju kodiranje.
+        // Oslanjam se na TextEncoder da ispravno rukuje UTF-16LE, bez ručnog dodavanja BOM-a.
+        // Ovo bi trebalo spriječiti probleme s duplim BOM-om ili pogrešnu interpretaciju.
         const encoder = new TextEncoder('utf-16le');
         const encodedContent = encoder.encode(xmlContent);
-        const bom = new Uint8Array([0xFF, 0xFE]); // UTF-16 Little Endian BOM
-
-        const combined = new Uint8Array(bom.length + encodedContent.length);
-        combined.set(bom, 0); // Dodaj BOM na početak
-        combined.set(encodedContent, bom.length); // Dodaj kodirani sadržaj nakon BOM-a
 
         // Tip datoteke postavljen na 'text/xml'
-        const blob = new Blob([combined], { type: 'text/xml' });
+        const blob = new Blob([encodedContent], { type: 'text/xml' });
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
