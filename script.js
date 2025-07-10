@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const frameoviPocetakSegmentaInput = document.getElementById('frameoviPocetakSegmenta');
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
-    const minuteKrajSegmentaInput = parseInt(document.getElementById('minuteKrajSegmenta').value) || 0;
-    const sekundeKrajSegmentaInput = parseInt(document.getElementById('sekundeKrajSegmenta').value) || 0;
-    const frameoviKrajSegmentaInput = parseInt(document.getElementById('frameoviKrajSegmenta').value) || 0;
+    const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
+    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
+    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
     const fpsHelpText = document.getElementById('fpsHelpText');
 
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input.id === 'fiksniBPM' || input.id === 'ciljaniBPM') {
                     if (value.includes('.')) {
                         const decimalPart = value.split('.')[1];
-                        if (decimalPart && decimalPart.length >= 4) {
+                        if (decimalPart && decimalPart.length >= 4) { // Pamtimo da Varijabilni BPM treba biti decimalni broj
                             if (nextInput) {
                                 nextInput.focus();
                             }
@@ -171,6 +171,21 @@ document.addEventListener('DOMContentLoaded', () => {
                `${String(frameovi).padStart(framePadding, '0')}`;
     }
 
+    // Funkcija za konverziju stringa u UTF-16 BE Uint8Array s CRLF prekidima linija
+    function convertStringToUTF16BEBuffer(str) {
+        // Zamijenimo sve \n s \r\n da osiguramo CRLF
+        const windowsStr = str.replace(/\n/g, '\r\n');
+        
+        const bytes = new Uint8Array(windowsStr.length * 2); // Svaki znak 2 bajta
+        let byteIndex = 0;
+        for (let i = 0; i < windowsStr.length; i++) {
+            const charCode = windowsStr.charCodeAt(i);
+            bytes[byteIndex++] = (charCode >> 8) & 0xFF; // High byte
+            bytes[byteIndex++] = charCode & 0xFF;        // Low byte
+        }
+        return bytes;
+    }
+
     function generateAndDownloadEDL() {
         if (edlMarkers.length === 0) {
             alert('Nema markera za generiranje EDL-a. Molimo prvo izračunajte markere.');
@@ -185,8 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
         // Reel ID za DUMMY_CLIP je AX (za 'Axillary', generička traka)
-        // Korištenje CRLF za Windows nove linije
         // Pažljivo postavljeni razmaci radi fiksne širine polja
+        // EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
+        // 001      AX       DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
         edlContent += `001      AX       DUMMY_CLIP  V     C        00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\r\n`;
         edlContent += `* COMMENT: Dummy clip for Edius compatibility\r\n`;
         edlContent += `\r\n`; // Dodatna prazna linija nakon dummy klipa
@@ -202,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const markerTC = marker.timecode; 
             
             // Pažljivo postavljeni razmaci i CRLF
+            // 002      V        MARKER_POINTV     M        00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
             edlContent += `${eventNum}      ${reelId}        ${clipName}  ${track}     ${type}    ${markerTC} ${markerTC} ${markerTC} ${markerTC}\r\n`;
             edlContent += `* COMMENT: ${marker.comment}\r\n`; 
             edlContent += `\r\n`; // Dodatna prazna linija nakon svakog markera
@@ -209,31 +226,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Edius EDL završava praznim linijama
         edlContent += `\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n`; 
-        edlContent += `M2      00:03:00:12\r\n`; // Ovaj dio si mi poslao iz dekompajlirane datoteke, zadnji marker.
-                                             // Stavit ćemo ga kao fiksni marker na kraju, možeš ga maknuti ako ne treba.
-                                             // Pretpostavljam da je ovo kraj Timecodea ili neki zadnji reference marker
-        edlContent += `\r\n`;
+        // edlContent += `M2      00:03:00:12\r\n`; // Ovaj dio je upitan, maknut ćemo ga za testiranje
+        // edlContent += `\r\n`;
 
         // UTF-16 BE BOM (Byte Order Mark)
         const bom = new Uint8Array([0xFE, 0xFF]); 
-        const textEncoder = new TextEncoder();
-        const encodedText = textEncoder.encode(edlContent); // Encodira u UTF-8, ali TextEncoder nema UTF-16 direktno
+        
+        // Konvertiramo cijeli sadržaj u UTF-16 BE bajtove
+        const utf16BeContent = convertStringToUTF16BEBuffer(edlContent);
 
-        // Za UTF-16 BE moramo ručno kreirati ArrayBuffer
-        // Izvor: StackOverflow i testiranje.
-        // Nema direktne podrške u Blob constructoru za 'utf-16be'
-        // Najbolji način je da text kodiramo kao UTF-16 i dodamo BOM
-        function stringToUTF16BEBytes(str) {
-            const bytes = [];
-            for (let i = 0; i < str.length; i++) {
-                const charCode = str.charCodeAt(i);
-                bytes.push((charCode >> 8) & 0xFF); // High byte
-                bytes.push(charCode & 0xFF);        // Low byte
-            }
-            return new Uint8Array(bytes);
-        }
-
-        const utf16BeContent = stringToUTF16BEBytes(edlContent);
+        // Kreiramo Blob s BOM-om i sadržajem
         const finalBlob = new Blob([bom, utf16BeContent], { type: 'text/plain' }); // type 'text/plain' bez charseta
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.edl`;
@@ -266,9 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
 
         const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
-        const minuteKrajSegmenta = parseInt(document.getElementById('minuteKrajSegmenta').value) || 0; // Ovdje je bila greška, dohvaćalo se s vanjskog scopea
-        const sekundeKrajSegmenta = parseInt(document.getElementById('sekundeKrajSegmenta').value) || 0; // Isto
-        const frameoviKrajSegmenta = parseInt(document.getElementById('frameoviKrajSegmenta').value) || 0; // Isto
+        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0;
+        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0;
+        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0;
 
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
