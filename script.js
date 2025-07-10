@@ -171,21 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
                `${String(frameovi).padStart(framePadding, '0')}`;
     }
 
-    // Funkcija za konverziju stringa u UTF-16 BE Uint8Array s CRLF prekidima linija
-    function convertStringToUTF16BEBuffer(str) {
-        // Zamijenimo sve \n s \r\n da osiguramo CRLF
-        const windowsStr = str.replace(/\n/g, '\r\n');
-        
-        const bytes = new Uint8Array(windowsStr.length * 2); // Svaki znak 2 bajta
-        let byteIndex = 0;
-        for (let i = 0; i < windowsStr.length; i++) {
-            const charCode = windowsStr.charCodeAt(i);
-            bytes[byteIndex++] = (charCode >> 8) & 0xFF; // High byte
-            bytes[byteIndex++] = charCode & 0xFF;        // Low byte
-        }
-        return bytes;
-    }
-
     function generateAndDownloadEDL() {
         if (edlMarkers.length === 0) {
             alert('Nema markera za generiranje EDL-a. Molimo prvo izračunajte markere.');
@@ -224,19 +209,12 @@ document.addEventListener('DOMContentLoaded', () => {
             edlContent += `\r\n`; // Dodatna prazna linija nakon svakog markera
         });
 
-        // Edius EDL završava praznim linijama
+        // Edius EDL završava praznim linijama (pretpostavka iz tvog primjera)
         edlContent += `\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n`; 
-        // edlContent += `M2      00:03:00:12\r\n`; // Ovaj dio je upitan, maknut ćemo ga za testiranje
-        // edlContent += `\r\n`;
-
-        // UTF-16 BE BOM (Byte Order Mark)
-        const bom = new Uint8Array([0xFE, 0xFF]); 
         
-        // Konvertiramo cijeli sadržaj u UTF-16 BE bajtove
-        const utf16BeContent = convertStringToUTF16BEBuffer(edlContent);
-
-        // Kreiramo Blob s BOM-om i sadržajem
-        const finalBlob = new Blob([bom, utf16BeContent], { type: 'text/plain' }); // type 'text/plain' bez charseta
+        // Stvara Blob s UTF-8 kodiranjem i CRLF
+        // Preglednici standardno preferiraju UTF-8.
+        const finalBlob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.edl`;
 
@@ -268,9 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
 
         const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
-        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0;
-        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0;
-        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0;
+        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0; 
+        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0; 
+        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0; 
 
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
