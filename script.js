@@ -1,3 +1,23 @@
+// --- Funkcija za automatsko selektiranje teksta pri fokusu ---
+// Kada korisnik tapne na input polje, sav tekst unutar njega će biti selektiran.
+// To omogućuje da odmah počne tipkati novi broj bez ručnog brisanja starog.
+function selectOnFocus(event) {
+    event.target.select();
+}
+
+// Pronađi sva input polja tipa "number" na koja želiš primijeniti ovo ponašanje.
+// Ovdje su uključena polja za fiksni BPM, sate, minute, sekunde i frameove.
+const numberInputs = document.querySelectorAll('input[type="number"]');
+
+// Dodaj 'focus' event listener svakom pronađenom numeričkom input polju.
+numberInputs.forEach(input => {
+    input.addEventListener('focus', selectOnFocus);
+});
+
+// --- KRAJ NOVOG KODA ---
+
+// --- POČETAK TVOJ POSTOJEĆI KOD ---
+
 function izracunajMarkere() {
     // 1. Dohvati ulazne podatke iz HTML forme
     const fiksniBPMInput = document.getElementById('fiksniBPM');
