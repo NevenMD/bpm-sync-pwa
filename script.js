@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Definiranje input polja
     const fiksniBPMInput = document.getElementById('fiksniBPM');
     const ciljaniBPMInput = document.getElementById('ciljaniBPM');
-    const FPSInput = document.getElementById('FPS');
+    const FPSInput = document.getElementById('fpsSelect'); // ISPRAVLJENO: ID je 'fpsSelect'
     const pragDriftaFrameoviInput = document.getElementById('pragDriftaFrameovi');
     const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmentaInput');
     const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmentaInput');
@@ -76,6 +76,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // Funkcija za izračunavanje Beat Per Minute (BPM)
     function calculateBPM() {
         console.log("Funkcija calculateBPM se pokreće."); // Dodano za debug
+        // Provjera jesu li elementi pronađeni prije pristupa njihovim vrijednostima
+        if (!fiksniBPMInput) {
+            console.error("fiksniBPMInput element nije pronađen.");
+            markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Fiksni BPM". Provjerite HTML ID.</p>';
+            return;
+        }
+        if (!ciljaniBPMInput) {
+            console.error("ciljaniBPMInput element nije pronađen.");
+            markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Ciljani BPM". Provjerite HTML ID.</p>';
+            return;
+        }
+        if (!FPSInput) {
+            console.error("FPSInput element nije pronađen.");
+            markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "FPS projekta". Provjerite HTML ID.</p>';
+            return;
+        }
+        if (!pragDriftaFrameoviInput) {
+            console.error("pragDriftaFrameoviInput element nije pronađen.");
+            markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Prag drifta". Provjerite HTML ID.</p>';
+            return;
+        }
+        // Provjere za timecode inpute kad se koristi ručni unos
+        if (!loadedXmlData) { // Ako nije učitan XML, provjeravamo ručne unose
+            if (!pocetakGlazbenogSegmentaInput) {
+                console.error("pocetakGlazbenogSegmentaInput element nije pronađen.");
+                markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Početak glazbenog segmenta". Provjerite HTML ID.</p>';
+                return;
+            }
+            if (!krajGlazbenogSegmentaInput) {
+                console.error("krajGlazbenogSegmentaInput element nije pronađen.");
+                markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Kraj glazbenog segmenta". Provjerite HTML ID.</p>';
+                return;
+            }
+            if (!ukupnoTrajanjeDatotekeInput) {
+                console.error("ukupnoTrajanjeDatotekeInput element nije pronađen.");
+                markeriOutput.innerHTML = '<p style="color: red;">Greška: Nije pronađeno polje za "Ukupno trajanje datoteke". Provjerite HTML ID.</p>';
+                return;
+            }
+        }
+
+
         const fiksniBPM = parseFloat(fiksniBPMInput.value);
         const ciljaniBPM = parseFloat(ciljaniBPMInput.value);
         const fps = parseFloat(FPSInput.value);
