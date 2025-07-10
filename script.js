@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
     const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
-    const sekundeKrajSegmentaInput = document = document.getElementById('sekundeKrajSegmenta');
+    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta'); // Ispravljeno: document = document.getElementById
     const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
     const fpsHelpText = document.getElementById('fpsHelpText');
@@ -53,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageToShow === 'input') {
             inputPage.classList.add('active');
             resultsPage.classList.remove('active');
-            // Pokušava postaviti fokus na prvo polje
             if (fiksniBPMInput) { 
                 fiksniBPMInput.focus(); 
                 console.log('Fokus postavljen na fiksniBPMInput.'); 
@@ -103,14 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input.id === 'fiksniBPM' || input.id === 'ciljaniBPM') {
                     if (value.includes('.')) {
                         const decimalPart = value.split('.')[1];
-                        // Prebacuj fokus tek kada se unesu 4 ili više decimalnih znamenki
                         if (decimalPart && decimalPart.length >= 4) {
                             if (nextInput) {
                                 nextInput.focus();
                             }
                         }
                     } else if (value.length >= 3 && !isNaN(parseFloat(value))) {
-                        // Prebacuj fokus za cijele brojeve s 3+ znamenki
                         if (nextInput) {
                             nextInput.focus();
                         }
@@ -119,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Logika za polja sata, minute, sekunde
                 else if (input.id.includes('sati') || input.id.includes('minute') || input.id.includes('sekunde')) {
                     const parsedValue = parseInt(value);
-                    // Prebacuj fokus ako su unesene 2 znamenke i to je valjan broj za minute/sekunde (0-59) ili sate
                     if (!isNaN(parsedValue) && value.length === 2 && (input.id.includes('sati') || (parsedValue >= 0 && parsedValue <= 59))) {
                         if (nextInput) {
                             nextInput.focus();
@@ -131,8 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parsedValue = parseInt(value);
                     if (!isNaN(parsedValue)) {
                         const maxFramesStrLength = String(maxFrames).length;
-                        // Prebacuj fokus ako je duljina vrijednosti jednaka duljini znamenki max frameova I unutar je raspona
-                        // ILI ako su 2 znamenke za FPS > 10 (npr. 25, 30, 60)
                         if ((value.length >= maxFramesStrLength && parsedValue >= 0 && parsedValue <= maxFrames) || (value.length === 2 && currentFPS > 10)) {
                             if (input === frameoviCijeleInput) {
                                 satiPocetakSegmentaInput.focus();
@@ -188,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const sekunde = Math.floor(preostaliFrameoviNakonMinuta / fps);
         const frameovi = Math.round(preostaliFrameoviNakonMinuta % fps);
 
-        // AŽURIRANO ZA EDIUS: Fiksno postavlja 2 znamenke za frameove, npr. 00-24, 00-07
         const framePadding = 2; 
 
         return `${String(sati).padStart(2, '0')}:` +
@@ -205,36 +198,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let edlContent = 'TITLE: BPM_Sync_Markers\n';
-        edlContent += `FCM: NON-DROP FRAME\n\n`; // Obavezno prazna linija nakon FCM
+        edlContent += `FCM: NON-DROP FRAME\n\n`; 
 
         const fps = parseFloat(fpsSelect.value);
-        const dummyClipDurationFrames = Math.round(fps * 10); // Npr. 10 sekundi trajanja
+        const dummyClipDurationFrames = Math.round(fps * 10); 
         const dummyClipOutTC = formatFramesToTimecode(dummyClipDurationFrames, fps);
 
-        // **NOVO: Reel ID postavljen na 'V' i provjereni razmaci**
-        //   EventNum ReelID ClipName    Track Type Source In   Source Out  Dest In     Dest Out
-        //   001      V      DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
-        edlContent += `001      V      DUMMY_CLIP  V     C    00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
+        // Dummy klip: V Reel ID, 8 znakova za Clip Name (DUMMY_CLIP), fiksni razmaci
+        //                                                      12345678901   12345678901   12345678901   12345678901
+        edlContent += `001      V        DUMMY_CLIP  V     C    00:00:00:00 ${dummyClipOutTC} 00:00:00:00 ${dummyClipOutTC}\n`;
+        // Komentar za dummy klip (opcionalno, ali može pomoći)
+        edlContent += `* COMMENT: Dummy clip for Edius compatibility\n`;
+
 
         edlMarkers.forEach((marker, index) => {
-            // Indexiranje kreće od 2 jer je 001 dummy klip
-            const eventNum = String(index + 2).padStart(3, '0'); 
-            const reelId = 'V'; // Promijenjeno u 'V' za Edius kompatibilnost
+            const eventNum = String(index + 2).padStart(3, '0'); // Nastavi od 002
+            const reelId = 'V'; 
             const track = 'V'; 
             const type = 'C'; 
-            const clipName = 'MARKER_CLIP'; // Malo drugačije ime za marker klip
-
-            const sourceOutTC = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
-            const destOutTC = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
+            const clipName = 'MARKER_CLIP'; // Ime za marker klip, također 8 znakova
+            
+            // sourceOut i destOut su isti kao sourceIn i destIn za marker (0-frame duration)
+            const sourceInOutTC = marker.timecode; 
+            const destInOutTC = marker.timecode; 
 
             // Razmaci su iznimno precizno postavljeni.
-            // Važno: 3 razmaka nakon eventNum, 6 razmaka nakon Reel ID, 2 nakon ClipName, 5 nakon Track, 4 nakon Type
-            //                                                          12345678901   12345678901   12345678901   12345678901
-            edlContent += `${eventNum}   ${reelId}      ${clipName}  ${track}     ${type}    ${marker.timecode} ${sourceOutTC} ${marker.timecode} ${destOutTC}\n`;
-            edlContent += `* COMMENT: ${marker.comment}\n`; 
+            // 001   V        DUMMY_CLIP  V     C    00:00:00:00 00:00:10:00 00:00:00:00 00:00:10:00
+            // 002   V        MARKER_CLIP V     C    00:00:38:21 00:00:38:21 00:00:38:21 00:00:38:21
+            edlContent += `${eventNum}   ${reelId}        ${clipName}  ${track}     ${type}    ${sourceInOutTC} ${sourceInOutTC} ${destInOutTC} ${destInOutTC}\n`;
+            edlContent += `* COMMENT: ${marker.comment}\n`; // Uklonjen timecode iz komentara
         });
 
-        const blob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' });
+        const blob = new Blob([edlContent], { type: 'text/plain;charset=utf-8' }); // Ostavljamo UTF-8
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.edl`;
 
         const a = document.createElement('a');
@@ -272,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
-        // Update FPS help text and max frames on each calculation
         fpsHelpText.textContent = `Trenutni FPS: ${FPS}`;
         frameoviCijeleInput.setAttribute('max', Math.floor(FPS - 1));
         frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(FPS - 1));
@@ -367,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // --- Kraj obrade grešaka ---
 
-        // IZRAČUNI NA TEMELJU NOVOG PRISTUPA
         const ciljTrajanjeSekundeSegment = ukupnoFrameovaSegment / FPS;
         const ciljaniBrojBeatova = Math.round(ciljaniBPM * (ciljTrajanjeSekundeSegment / 60));
 
@@ -380,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const ukupniDriftFrameovi = stvarnaDuljinaSegmentaFrameoviFiksniBPM - ciljanaDuljinaSegmentaFrameovi;
 
 
-        // ISPIS OSNOVNIH REZULTATA
         rezultatCiljaniBPM.textContent = ciljaniBPM.toFixed(4);
         rezultatIzmjereniBPM.textContent = fiksniBPM.toFixed(4);
         rezultatUkupanBrojBeatovaCilj.textContent = ciljaniBrojBeatova;
@@ -397,7 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         rezultatNapomenaDrift.textContent = driftNapomena;
 
-        // --- IZRAČUN MARKERA ZA ISPRAVAK ---
         markeriZaIspravakDiv.innerHTML = '';
         edlMarkers = [];
         let korekcijePotrebne = false;
@@ -430,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         comment: commentText
                     });
 
-                    // Prikaz na stranici
                     const p = document.createElement('p');
                     p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
                     markeriZaIspravakDiv.appendChild(p);
