@@ -212,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const reelId = 'AX'; // Promijenjeno u 'AX' za bolju kompatibilnost s Ediusom
             const track = 'V'; // Video track
             const type = 'C'; // Promijenjeno u 'C' (Cut) jer Edius to često očekuje i za markere
+            const clipName = 'DUMMYCLIP'; // **NOVO: Dodan dummy clip name**
             
             // sourceOut i destOut neka budu marker.totalFrames + 1 frame za trajanje od 1 frame
             const sourceOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, parseFloat(fpsSelect.value)); 
@@ -219,7 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // AŽURIRANO ZA EDIUS: Izrazito fiksirani razmaci za Edius format
             // Broj razmaka je točno podešen prema primjerima EDL-a koji rade u Ediusu
-            edlContent += `${eventNum}  ${reelId}       ${track}     ${type}    ${marker.timecode} ${sourceOut} ${marker.timecode} ${destOut}\n`;
+            // Prilagođeno zbog dodavanja clipNamea
+            edlContent += `${eventNum}  ${reelId}     ${clipName}  ${track}     ${type}    ${marker.timecode} ${sourceOut} ${marker.timecode} ${destOut}\n`;
             edlContent += `* COMMENT: ${marker.comment}\n`; // Standardni format za komentare
         });
 
