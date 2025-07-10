@@ -83,3 +83,32 @@
                 <input type="number" id="frameoviKrajSegmenta" value="0" min="0">
             </div>
         </div>
+
+        <div class="input-group">
+            <label for="mjeraTakta">Broj udaraca u taktu (npr. 4 za 4/4, 3 za 3/4):</label>
+            <select id="mjeraTakta">
+                <option value="4" selected>4 (4/4)</option>
+                <option value="3">3 (3/4)</option>
+                <option value="2">2 (2/4)</option>
+                <option value="6">6 (6/8)</option>
+            </select>
+        </div>
+
+        <div id="rezultati" class="results-box">
+            <h3>Izračunani rezultati:</h3>
+            <p><strong>Varijabilni BPM:</strong> <span class="precizan-broj" id="rezultatVarijabilniBPM">0.0000</span></p>
+            <p><strong>Broj frameova po beatu:</strong> <span id="rezultatFrameoviPoBeatu">0</span></p>
+            <p><strong>Broj frameova po taktu:</strong> <span id="rezultatFrameoviPoTakatu">0</span></p>
+            <p><strong>Postotak prilagodbe glazbene datoteke:</strong> <span id="rezultatPostotakPrilagodbe">0.00%</span></p>
+            <p><strong>Izračunata originalna duljina segmenta:</strong> <span id="rezultatIzracunataOriginalnaDuljinaSegmenta">00:00:00:00</span></p>
+            <p><strong>Nova duljina glazbenog segmenta:</strong> <span id="rezultatNovaDuljinaSegment">00:00:00:00</span></p>
+            <p><strong>Nova ukupna duljina fizičke datoteke:</strong> <span id="rezultatNovaDuljinaCijele">00:00:00:00</span></p>
+            <p><strong>Novi timecode početka segmenta:</strong> <span id="rezultatNoviPocetakSegmenta">00:00:00:00</span></p>
+            <p><strong>Novi timecode kraja segmenta:</strong> <span id="rezultatNoviKrajSegmenta">00:00:00:00</span></p>
+            <p class="napomena" id="rezultatBrojBeatova">Ukupni broj beatova za ovo trajanje (zaokruženo): 0</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
