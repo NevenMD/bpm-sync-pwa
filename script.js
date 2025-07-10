@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const calculateButton = document.getElementById('calculateButton');
     const backButton = document.getElementById('backButton');
     const exportEdlButton = document.getElementById('exportEdlButton'); // This button will now export CSV
+    exportEdlButton.textContent = 'Izvezi CSV';
 
     const fiksniBPMInput = document.getElementById('fiksniBPM');
     const ciljaniBPMInput = document.getElementById('ciljaniBPM');
