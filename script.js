@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOMContentLoaded event pokrenut, script.js se izvršava."); // Dodano za debug
+    console.log("DOMContentLoaded event pokrenut, script.js se izvršava.");
 
     // Definiranje input polja
     const fiksniBPMInput = document.getElementById('fiksniBPM');
@@ -22,15 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Provjera da li je gumb pronađen
     if (calculateButton) {
-        console.log("Gumb 'Izračunaj Markere' pronađen u DOM-u."); // Dodano za debug
+        console.log("Gumb 'Izračunaj Markere' pronađen u DOM-u.");
         calculateButton.addEventListener('click', () => {
-            console.log("Gumb 'Izračunaj Markere' je kliknut!"); // Dodano za debug
+            console.log("Gumb 'Izračunaj Markere' je kliknut!");
             izracunajMarkere();
         });
     } else {
-        console.error("GREŠKA: Gumb s ID-jem 'calculateButton' NIJE PRONAĐEN. Provjerite HTML."); // Dodano za debug
+        console.error("GREŠKA: Gumb s ID-jem 'calculateButton' NIJE PRONAĐEN. Provjerite HTML.");
     }
-    
+
     if (generateXmlButton) {
         generateXmlButton.addEventListener('click', () => {
             if (window.generatedMarkers) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     } else {
-        console.warn("Upozorenje: Gumb s ID-jem 'generateXmlButton' NIJE PRONAĐEN."); // Dodano za debug
+        console.warn("Upozorenje: Gumb s ID-jem 'generateXmlButton' NIJE PRONAĐEN.");
     }
 
 
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Funkcija za izračunavanje Beat Per Minute (BPM)
     function calculateBPM() {
-        console.log("Funkcija calculateBPM se pokreće."); // Dodano za debug
+        console.log("Funkcija calculateBPM se pokreće.");
         // Provjera jesu li elementi pronađeni prije pristupa njihovim vrijednostima
         if (!fiksniBPMInput) {
             console.error("fiksniBPMInput element nije pronađen.");
@@ -127,28 +127,28 @@ document.addEventListener('DOMContentLoaded', () => {
         let ukupnoTrajanjeDatotekeFrames;
 
         if (loadedXmlData) {
-            console.log("Korištenje podataka iz učitanog XML-a."); // Dodano za debug
+            console.log("Korištenje podataka iz učitanog XML-a.");
             try {
                 pocetakGlazbenogSegmentaFrames = timecodeToFrames(loadedXmlData.musicStart, fps);
                 krajGlazbenogSegmentaFrames = timecodeToFrames(loadedXmlData.musicEnd, fps);
                 ukupnoTrajanjeDatotekeFrames = timecodeToFrames(loadedXmlData.fileEnd, fps);
-                console.log(`XML podaci - Glazba početak (frames): ${pocetakGlazbenogSegmentaFrames}, Kraj (frames): ${krajGlazbenogSegmentaFrames}`); // Dodano za debug
+                console.log(`XML podaci - Glazba početak (frames): ${pocetakGlazbenogSegmentaFrames}, Kraj (frames): ${krajGlazbenogSegmentaFrames}`);
             } catch (e) {
-                console.error("Greška pri konverziji timecodea iz XML-a u frames:", e); // Dodano za debug
+                console.error("Greška pri konverziji timecodea iz XML-a u frames:", e);
                 xmlStatus.textContent = 'Greška pri obradi XML timecodea: ' + e.message;
                 return;
             }
         } else {
-            console.log("Korištenje podataka iz ručnih unosa (nije učitan XML ili greška u parsiranju)."); // Dodano za debug
+            console.log("Korištenje podataka iz ručnih unosa (nije učitan XML ili greška u parsiranju).");
             // Ako nema učitanog XML-a ili parsiranje nije uspjelo, koristimo ručne unose
             try {
                 pocetakGlazbenogSegmentaFrames = timecodeToFrames(pocetakGlazbenogSegmentaInput.value, fps);
                 krajGlazbenogSegmentaFrames = timecodeToFrames(krajGlazbenogSegmentaInput.value, fps);
                 ukupnoTrajanjeDatotekeFrames = timecodeToFrames(ukupnoTrajanjeDatotekeInput.value, fps);
-                console.log(`Ručni unosi - Glazba početak (frames): ${pocetakGlazbenogSegmentaFrames}, Kraj (frames): ${krajGlazbenogSegmentaFrames}`); // Dodano za debug
+                console.log(`Ručni unosi - Glazba početak (frames): ${pocetakGlazbenogSegmentaFrames}, Kraj (frames): ${krajGlazbenogSegmentaFrames}`);
             } catch (e) {
                 markeriOutput.innerHTML = `<p style="color: red;">Greška u formatu timecodea. Molimo koristite HH:MM:SS:FF. (${e.message})</p>`;
-                console.error("Greška pri konverziji ručnih timecodea u frames:", e); // Dodano za debug
+                console.error("Greška pri konverziji ručnih timecodea u frames:", e);
                 return;
             }
         }
@@ -157,28 +157,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isNaN(fiksniBPM) || isNaN(ciljaniBPM) || isNaN(fps) || isNaN(pragDriftaFrameovi) ||
             isNaN(pocetakGlazbenogSegmentaFrames) || isNaN(krajGlazbenogSegmentaFrames) || isNaN(ukupnoTrajanjeDatotekeFrames)) {
             markeriOutput.innerHTML = '<p style="color: red;">Molimo unesite sve numeričke vrijednosti i timecodeove ispravno.</p>';
-            console.error("Validacijska greška: Neki od ulaznih podataka su NaN."); // Dodano za debug
+            console.error("Validacijska greška: Neki od ulaznih podataka su NaN.");
             return;
         }
 
         if (fiksniBPM <= 0 || ciljaniBPM <= 0 || fps <= 0 || pragDriftaFrameovi < 0) {
             markeriOutput.innerHTML = '<p style="color: red;">BPM, FPS i prag drifta moraju biti pozitivni brojevi.</p>';
-            console.error("Validacijska greška: Negativne ili nulte vrijednosti za BPM, FPS, prag drifta."); // Dodano za debug
+            console.error("Validacijska greška: Negativne ili nulte vrijednosti za BPM, FPS, prag drifta.");
             return;
         }
 
         if (krajGlazbenogSegmentaFrames <= pocetakGlazbenogSegmentaFrames) {
             markeriOutput.innerHTML = '<p style="color: red;">Kraj glazbenog segmenta mora biti poslije početka glazbenog segmenta.</p>';
-            console.error("Validacijska greška: Kraj glazbenog segmenta prije ili na početku."); // Dodano za debug
+            console.error("Validacijska greška: Kraj glazbenog segmenta prije ili na početku.");
             return;
         }
         if (ukupnoTrajanjeDatotekeFrames <= krajGlazbenogSegmentaFrames) {
             markeriOutput.innerHTML = '<p style="color: red;">Ukupno trajanje datoteke mora biti poslije kraja glazbenog segmenta.</p>';
-            console.error("Validacijska greška: Ukupno trajanje datoteke prije ili na kraju glazbenog segmenta."); // Dodano za debug
+            console.error("Validacijska greška: Ukupno trajanje datoteke prije ili na kraju glazbenog segmenta.");
             return;
         }
 
-        console.log("Svi ulazni podaci su validni, nastavljam s izračunima."); // Dodano za debug
+        console.log("Svi ulazni podaci su validni, nastavljam s izračunima.");
 
 
         const trajanjeGlazbenogSegmentaFrames = krajGlazbenogSegmentaFrames - pocetakGlazbenogSegmentaFrames;
@@ -263,21 +263,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateXml(markers, fps) {
         let xmlString = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>
 <edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">
-	<edius:formatVersion>4</edius:formatVersion>
-	<edius:CreateDate>${new Date().toDateString()} ${new Date().toLocaleTimeString()}</edius:CreateDate>
-	<edius:markerLists>\n`;
+    <edius:formatVersion>4</edius:formatVersion>
+    <edius:CreateDate>${new Date().toDateString()} ${new Date().toLocaleTimeString()}</edius:CreateDate>
+    <edius:markerLists>\n`;
 
         markers.forEach(marker => {
             // Prilagodi izlaz za duration da bude --:--:--:--
             const duration = '--:--:--:--';
             xmlString += `\t\t<edius:marker>
-			<edius:no>${marker.no}</edius:no>
-			<edius:anchor>1</edius:anchor>
-			<edius:position>${marker.position}</edius:position>
-			<edius:duration>${duration}</edius:duration>
-			<edius:comment>${marker.comment}</edius:comment>
-			<edius:color>0xffffffff</edius:color>
-		</edius:marker>\n`;
+            <edius:no>${marker.no}</edius:no>
+            <edius:anchor>1</edius:anchor>
+            <edius:position>${marker.position}</edius:position>
+            <edius:duration>${duration}</edius:duration>
+            <edius:comment>${marker.comment}</edius:comment>
+            <edius:color>0xffffffff</edius:color>
+        </edius:marker>\n`;
         });
 
         xmlString += `\t</edius:markerLists>
@@ -312,15 +312,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
 
-                    console.log("XML dokument učitan (parseEdiusXmlFile):", xmlDoc); // Dodano za debug
+                    console.log("XML dokument učitan (parseEdiusXmlFile):", xmlDoc);
                     // Check for parsing errors
                     if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
                         throw new Error('Pogreška pri parsiranju XML datoteke. Provjerite je li ispravan Edius XML format.');
                     }
 
                     const markers = xmlDoc.querySelectorAll('edius\\:marker, marker'); // Handle both namespaced and non-namespaced if parsing fails
-                    console.log("Pronađeni markeri (NodeList) (parseEdiusXmlFile):", markers); // Dodano za debug
-                    console.log("Broj pronađenih markera (parseEdiusXmlFile):", markers.length); // Dodano za debug
+                    console.log("Pronađeni markeri (NodeList) (parseEdiusXmlFile):", markers);
+                    console.log("Broj pronađenih markera (parseEdiusXmlFile):", markers.length);
 
 
                     if (markers.length === 0) {
@@ -334,31 +334,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // First marker is file start
                     fileStartTC = markers[0].querySelector('edius\\:position, position')?.textContent;
-                    console.log("fileStartTC (iz prvog markera) (parseEdiusXmlFile):", fileStartTC); // Dodano za debug
+                    console.log("fileStartTC (iz prvog markera) (parseEdiusXmlFile):", fileStartTC);
 
                     // Last marker is file end
                     fileEndTC = markers[markers.length - 1].querySelector('edius\\:position, position')?.textContent;
-                    console.log("fileEndTC (iz zadnjeg markera) (parseEdiusXmlFile):", fileEndTC); // Dodano za debug
+                    console.log("fileEndTC (iz zadnjeg markera) (parseEdiusXmlFile):", fileEndTC);
 
                     // Iteriramo kroz sve markere kako bismo pronašli "glazba_pocetak" i "glazba_kraj"
-                    markers.forEach((marker, index) => { // Dodan 'index' za debugiranje
+                    markers.forEach((marker, index) => {
                         const commentElement = marker.querySelector('edius\\:comment, comment');
                         const comment = commentElement ? commentElement.textContent.trim().toLowerCase() : '';
                         const position = marker.querySelector('edius\\:position, position')?.textContent;
 
-                        console.log(`--- Marker ${index + 1} (parseEdiusXmlFile) ---`); // Dodano za debug
-                        console.log(`  Pronađen komentar element (parseEdiusXmlFile):`, commentElement); // Dodano za debug
-                        console.log(`  Sadržaj komentara (parseEdiusXmlFile): "${comment}"`); // Dodano za debug
-                        console.log(`  Pronađena pozicija element (parseEdiusXmlFile):`, marker.querySelector('edius\\:position, position')); // Dodano za debug
-                        console.log(`  Sadržaj pozicije (parseEdiusXmlFile): "${position}"`); // Dodano za debug
+                        console.log(`--- Marker ${index + 1} (parseEdiusXmlFile) ---`);
+                        console.log(`  Pronađen komentar element (parseEdiusXmlFile):`, commentElement);
+                        console.log(`  Sadržaj komentara (parseEdiusXmlFile): "${comment}"`);
+                        console.log(`  Pronađena pozicija element (parseEdiusXmlFile):`, marker.querySelector('edius\\:position, position'));
+                        console.log(`  Sadržaj pozicije (parseEdiusXmlFile): "${position}"`);
 
                         if (comment === 'glazba_pocetak' && position) {
                             musicStartTC = position;
-                            console.log("!!! Postavljen musicStartTC na (parseEdiusXmlFile):", musicStartTC); // Dodano za debug
+                            console.log("!!! Postavljen musicStartTC na (parseEdiusXmlFile):", musicStartTC);
                         }
                         if (comment === 'glazba_kraj' && position) {
                             musicEndTC = position;
-                            console.log("!!! Postavljen musicEndTC na (parseEdiusXmlFile):", musicEndTC); // Dodano za debug
+                            console.log("!!! Postavljen musicEndTC na (parseEdiusXmlFile):", musicEndTC);
                         }
                     });
 
@@ -384,14 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                 } catch (error) {
-                    console.error("Greška u parseEdiusXmlFile catch bloku:", error); // Dodano za debug
+                    console.error("Greška u parseEdiusXmlFile catch bloku:", error);
                     xmlStatus.textContent = `Greška pri obradi datoteke: ${error.message}`;
                     loadedXmlData = null; // Resetirajte loadedXmlData u slučaju greške
                     reject(error);
                 }
             };
             reader.onerror = (error) => {
-                console.error("Greška pri čitanju datoteke (reader.onerror):", error); // Dodano za debug
+                console.error("Greška pri čitanju datoteke (reader.onerror):", error);
                 xmlStatus.textContent = `Greška pri čitanju datoteke: ${error.message}`;
                 loadedXmlData = null; // Resetirajte loadedXmlData u slučaju greške
                 reject(error);
@@ -415,12 +415,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         pocetakGlazbenogSegmentaInput.value = data.musicStart;
                         krajGlazbenogSegmentaInput.value = data.musicEnd;
                         ukupnoTrajanjeDatotekeInput.value = data.fileEnd;
-                        // Ovisno o vašem HTML-u, možda trebate postaviti i input za početak datoteke ako postoji
-                        // Npr. document.getElementById('pocetakDatotekeInput').value = data.fileStart;
-                        console.log("Uspješno učitani i postavljeni XML podaci u input polja."); // Dodano za debug
+                        console.log("Uspješno učitani i postavljeni XML podaci u input polja.");
                     })
                     .catch(error => {
-                        console.error("Greška pri parsiranju ili obradi XML-a u 'change' listeneru:", error); // Dodano za debug
+                        console.error("Greška pri parsiranju ili obradi XML-a u 'change' listeneru:", error);
                         xmlStatus.textContent = `Greška: ${error.message}`;
                         loadedXmlData = null; // Resetirajte loadedXmlData u slučaju greške
                         // Opcionalno: Resetirajte input polja na 00:00:00:00 ili prazno
@@ -434,23 +432,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     } else {
-        console.warn("Upozorenje: Input za XML datoteku s ID-jem 'ediusXmlFile' NIJE PRONAĐEN."); // Dodano za debug
+        console.warn("Upozorenje: Input za XML datoteku s ID-jem 'ediusXmlFile' NIJE PRONAĐEN.");
     }
 
 
     // Funkcija koja se poziva na klik gumba "Izračunaj Markere"
     function izracunajMarkere() {
-        console.log("Funkcija izracunajMarkere se pokreće."); // Dodano za debug
+        console.log("Funkcija izracunajMarkere se pokreće.");
         // Pozovite calculateBPM, koja će obaviti sve provjere i izračune
         const results = calculateBPM();
         if (results) {
-            console.log("Izračuni završeni, rezultati:", results); // Dodano za debug
+            console.log("Izračuni završeni, rezultati:", results);
             // Ako su izračuni uspješni, rezultati su u 'results' objektu.
             // Ovdje možete dodatno manipulirati rezultatima ako je potrebno.
             // Npr. automatski generirati XML nakon izračuna ako je to željeno ponašanje.
             // generateXml(results.markeri, results.fps);
         } else {
-            console.log("calculateBPM nije vratila rezultate (vjerojatno zbog greške ili validacije)."); // Dodano za debug
+            console.log("calculateBPM nije vratila rezultate (vjerojatno zbog greške ili validacije).");
         }
     }
 });
