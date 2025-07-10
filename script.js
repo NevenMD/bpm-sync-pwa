@@ -6,7 +6,6 @@ function selectOnFocus(event) {
 }
 
 // Pronađi sva input polja tipa "number" na koja želiš primijeniti ovo ponašanje.
-// Ovdje su uključena polja za fiksni BPM, sate, minute, sekunde i frameove.
 const numberInputs = document.querySelectorAll('input[type="number"]');
 
 // Dodaj 'focus' event listener svakom pronađenom numeričkom input polju.
@@ -14,29 +13,101 @@ numberInputs.forEach(input => {
     input.addEventListener('focus', selectOnFocus);
 });
 
-// --- KRAJ NOVOG KODA ---
+// --- KRAJ KODA ZA AUTO-SELEKCIJU ---
 
-// --- POČETAK TVOJ POSTOJEĆI KOD ---
+// --- POČETAK KODA ZA AUTO-PREBACIVANJE FOKUSA NA SLJEDEĆE POLJE ---
 
-function izracunajMarkere() {
-    // 1. Dohvati ulazne podatke iz HTML forme
-    const fiksniBPMInput = document.getElementById('fiksniBPM');
-    const fpsSelect = document.getElementById('fpsSelect');
+// Funkcija za automatsko prebacivanje fokusa na sljedeće polje
+function setupAutoAdvance() {
+    // Dohvaćanje DOM elemenata unutar funkcije, kako bi bili sigurni da su dostupni
     const satiInput = document.getElementById('sati');
     const minuteInput = document.getElementById('minute');
     const sekundeInput = document.getElementById('sekunde');
     const frameoviInput = document.getElementById('frameovi');
+    const fpsSelect = document.getElementById('fpsSelect');
     const mjeraTaktaSelect = document.getElementById('mjeraTakta');
-    const rezultatiDiv = document.getElementById('rezultati');
-    const fpsHelpText = document.getElementById('fpsHelpText');
 
+    // Definiraj redoslijed polja za automatsko prebacivanje fokusa
+    const orderedInputs = [
+        satiInput,
+        minuteInput,
+        sekundeInput,
+        frameoviInput
+    ];
+
+    orderedInputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+            let value = input.value;
+            const nextInput = orderedInputs[index + 1];
+
+            // Preskoči ako polje nije broj ili je prazno (ne želimo prebacivati fokus na temelju nevaljanog unosa)
+            if (isNaN(parseFloat(value)) || value.trim() === '') {
+                return;
+            }
+
+            if (input === satiInput || input === minuteInput || input === sekundeInput) {
+                // Za sate, minute, sekunde: prebaci fokus kad korisnik unese 2 znamenke.
+                // Dodatna provjera za minute/sekunde da se ne prebaci ako je npr. uneseno "6" pa korisnik čeka "0"
+                if (value.length === 2 && parseInt(value) >= 0 && parseInt(value) <= 59) {
+                    if (nextInput) { // Provjeri postoji li sljedeći input u nizu
+                        nextInput.focus();
+                    } else { // Ako je ovo zadnji numerički input, fokusiraj na mjeraTaktaSelect
+                        mjeraTaktaSelect.focus();
+                    }
+                }
+            } else if (input === frameoviInput) {
+                const currentFPS = parseFloat(fpsSelect.value);
+                const maxFrames = Math.floor(currentFPS - 1); // Max valid frame value for current FPS
+                const typedValue = parseInt(value);
+
+                // Auto-advance ako je unesen broj dovoljno dug (npr. 2 znamenke)
+                // ili ako je duljina unosa jednaka maksimalnoj očekivanoj duljini za tu vrijednost FPS-a
+                const maxFramesStrLength = String(maxFrames).length;
+
+                // Ako je duljina unosa jednaka duljini maksimalnog broja frameova (npr. 23 za 24 FPS)
+                // ILI ako je duljina unosa 2 (za FPS > 25, npr. 59 za 60 FPS)
+                if ((value.length >= maxFramesStrLength && typedValue >=0 && typedValue <= maxFrames) || value.length === 2) {
+                     mjeraTaktaSelect.focus();
+                }
+            }
+        });
+    });
+}
+// --- KRAJ KODA ZA AUTO-PREBACIVANJE FOKUSA ---
+
+
+// --- OSTATAK TVOJ POSTOJEĆI KOD ---
+
+// Dohvaćanje DOM elemenata (ponovno definirano za opseg)
+const fiksniBPMInput = document.getElementById('fiksniBPM');
+const fpsSelect = document.getElementById('fpsSelect');
+const satiInput = document.getElementById('sati');
+const minuteInput = document.getElementById('minute');
+const sekundeInput = document.getElementById('sekunde');
+const frameoviInput = document.getElementById('frameovi');
+const mjeraTaktaSelect = document.getElementById('mjeraTakta');
+
+const rezultatVarijabilniBPM = document.getElementById('rezultatVarijabilniBPM');
+const rezultatFrameoviPoBeatu = document.getElementById('rezultatFrameoviPoBeatu');
+const rezultatFrameoviPoTakatu = document.getElementById('rezultatFrameoviPoTakatu');
+const rezultatPostotakPrilagodbe = document.getElementById('rezultatPostotakPrilagodbe');
+const rezultatNovaDuljina = document.getElementById('rezultatNovaDuljina');
+const rezultatBrojBeatova = document.getElementById('rezultatBrojBeatova');
+const fpsHelpText = document.getElementById('fpsHelpText');
+
+
+// Funkcija za proračun (izracunajMarkere - naziv si promijenio, pa ga zadržavam)
+function izracunajMarkere() {
+    // 1. Dohvati ulazne podatke iz HTML forme (neke su već dohvaćene gore, ali ovo je za lokalni opseg funkcije)
     const fiksniBPM = parseFloat(fiksniBPMInput.value);
-    const FPS = parseFloat(fpsSelect.value); // Sada se FPS uzima iz select polja
+    const FPS = parseFloat(fpsSelect.value);
     const sati = parseInt(satiInput.value);
     const minute = parseInt(minuteInput.value);
     const sekunde = parseInt(sekundeInput.value);
     const frameovi = parseInt(frameoviInput.value);
-    const mjeraTakta = parseInt(mjeraTaktaSelect.value); // Broj udaraca u taktu
+    const mjeraTakta = parseInt(mjeraTaktaSelect.value);
+    const rezultatiDiv = document.getElementById('rezultati');
+
 
     // Ažuriraj tekstualnu pomoć za FPS
     fpsHelpText.textContent = `Current FPS: ${FPS}`;
@@ -187,6 +258,8 @@ function izracunajMarkere() {
 
 // Postavljanje slušatelja događaja (Event Listeners) - ostaje isto
 document.addEventListener('DOMContentLoaded', () => {
+    // Dohvaćanje referenci na elemente unutar DOMContentLoaded
+    // Ovo je sigurniji način da se osigura da su elementi učitani
     const fiksniBPMInput = document.getElementById('fiksniBPM');
     const fpsSelect = document.getElementById('fpsSelect');
     const satiInput = document.getElementById('sati');
@@ -203,5 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
     frameoviInput.addEventListener('input', izracunajMarkere);
     mjeraTaktaSelect.addEventListener('change', izracunajMarkere);
 
+    // Pozovi setupAutoAdvance funkciju nakon što su svi elementi dohvaćeni
+    setupAutoAdvance();
+
+    // Inicijalni proračun pri učitavanju stranice
     izracunajMarkere();
 });
