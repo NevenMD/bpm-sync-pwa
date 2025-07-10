@@ -1,14 +1,15 @@
+/* Osnovna stilizacija */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Arial, sans-serif;
     background-color: #f4f7f6;
-    margin: 0;
-    padding: 20px;
+    color: #333;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align at the top for smaller screens */
+    align-items: flex-start; /* Promijenjeno u flex-start da ne bude previše centrirano vertikalno */
     min-height: 100vh;
+    margin: 0;
+    padding: 20px;
     box-sizing: border-box;
-    color: #333;
 }
 
 .container {
@@ -16,18 +17,24 @@ body {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
     width: 100%;
-    max-width: 500px;
-    box-sizing: border-box;
+    margin-top: 50px; /* Dodan razmak od vrha */
 }
 
 h1 {
-    color: #0056b3;
+    color: #2c3e50;
     text-align: center;
     margin-bottom: 30px;
-    font-size: 1.8em;
 }
 
+h3 {
+    color: #34495e;
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+/* Stil za input grupe */
 .input-group {
     margin-bottom: 20px;
 }
@@ -39,72 +46,138 @@ h1 {
     color: #555;
 }
 
-.input-group input[type="number"] {
+.input-group input[type="number"],
+.input-group select {
     width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    box-sizing: border-box;
     font-size: 1em;
-    -moz-appearance: textfield; /* Firefox hide arrows */
+    box-sizing: border-box; /* Važno za ispravnu širinu */
+    transition: border-color 0.3s ease;
 }
 
-/* Hide arrows for Chrome, Safari, Edge */
-.input-group input[type="number"]::-webkit-outer-spin-button,
-.input-group input[type="number"]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.duration-group .duration-fields {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Small gap between inputs and colons */
-}
-
-.duration-group .duration-fields input {
-    flex: 1; /* Distribute space equally */
-    text-align: center;
-}
-
-.duration-group .colon {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #777;
+.input-group input[type="number"]:focus,
+.input-group select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
 }
 
 .help-text {
     font-size: 0.85em;
     color: #777;
     margin-top: 5px;
-    text-align: right;
+    margin-bottom: 10px;
 }
 
-.results-box {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: #e9f7ff;
-    border: 1px solid #cceeff;
-    border-radius: 8px;
-    color: #004085;
+/* Stil za polja trajanja */
+.duration-fields {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Manji razmak između polja */
 }
 
-.results-box h3 {
-    color: #0056b3;
-    margin-top: 0;
-    margin-bottom: 15px;
+.duration-fields input[type="number"] {
+    width: 25%; /* Rasporedite ravnomjerno 4 polja */
     text-align: center;
+}
+
+.duration-fields .colon {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #777;
+}
+
+/* Rezultati */
+.results-box {
+    background-color: #e9f7f0; /* Svjetlo zelena pozadina za rezultate */
+    border: 1px solid #d4edda;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    color: #155724; /* Tamno zeleni tekst */
 }
 
 .results-box p {
     margin-bottom: 10px;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
-.results-box strong {
-    color: #002752;
+.results-box p strong {
+    color: #0c4d22;
 }
 
 .results-box .precizan-broj {
     font-weight: bold;
-    color:
+    color: #007bff; /* Plava boja za precizne brojeve */
+}
+
+.results-box .napomena {
+    font-size: 0.9em;
+    color: #6a008a; /* Ljubičasta boja za napomene */
+    font-style: italic;
+    margin-top: 15px;
+}
+
+.error-message {
+    color: #dc3545; /* Crvena boja za poruke o grešci */
+    font-weight: bold;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Gumb */
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    width: 100%; /* Gumb preko cijele širine */
+    margin-top: 25px; /* Razmak iznad gumba */
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Stil za stranice - ključno za prikaz/skrivanje */
+.page {
+    display: none; /* Sakrij sve stranice po defaultu */
+}
+
+.page.active {
+    display: block; /* Pokaži samo aktivnu stranicu */
+}
+
+/* Media Queries za manje ekrane */
+@media (max-width: 768px) {
+    .container {
+        margin-top: 20px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .duration-fields input[type="number"] {
+        width: 22%; /* Malo smanjenje za vrlo male ekrane */
+    }
+    .duration-fields .colon {
+        font-size: 1em;
+    }
+    .input-group input[type="number"],
+    .input-group select,
+    button {
+        font-size: 1em;
+        padding: 10px 15px;
+    }
+}
