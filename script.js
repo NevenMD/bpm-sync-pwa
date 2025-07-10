@@ -1,11 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Script.js loaded and DOMContentLoaded fired.'); 
+    console.log('Script.js loaded and DOMContentLoaded fired.');
 
     const inputPage = document.getElementById('input-page');
     const resultsPage = document.getElementById('results-page');
     const calculateButton = document.getElementById('calculateButton');
     const backButton = document.getElementById('backButton');
-    const exportEdlButton = document.getElementById('exportEdlButton'); 
+    const exportEdlButton = document.getElementById('exportEdlButton');
     exportEdlButton.textContent = 'Izvezi XML'; // Promjena teksta gumba
 
     const fiksniBPMInput = document.getElementById('fiksniBPM');
@@ -19,15 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const sekundeCijeleInput = document.getElementById('sekundeCijele');
     const frameoviCijeleInput = document.getElementById('frameoviCijele');
 
-    const satiPocetakSegmentaInput = document.getElementById('satiPocetakSegmenta'); 
+    const satiPocetakSegmentaInput = document.getElementById('satiPocetakSegmenta');
     const minutePocetakSegmentaInput = document.getElementById('minutePocetakSegmenta');
-    const sekundePocetakSegmentaInput = document.getElementById('sekundePocetakSegmenta'); 
+    const sekundePocetakSegmentaInput = document.getElementById('sekundePocetakSegmenta');
     const frameoviPocetakSegmentaInput = document.getElementById('frameoviPocetakSegmenta');
 
     const satiKrajSegmentaInput = document.getElementById('satiKrajSegmenta');
     const minuteKrajSegmentaInput = document.getElementById('minuteKrajSegmenta');
-    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta'); 
-    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta'); 
+    const sekundeKrajSegmentaInput = document.getElementById('sekundeKrajSegmenta');
+    const frameoviKrajSegmentaInput = document.getElementById('frameoviKrajSegmenta');
 
     const fpsHelpText = document.getElementById('fpsHelpText');
 
@@ -47,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageToShow === 'input') {
             inputPage.classList.add('active');
             resultsPage.classList.remove('active');
-            if (fiksniBPMInput) { 
-                fiksniBPMInput.focus(); 
+            if (fiksniBPMInput) {
+                fiksniBPMInput.focus();
             }
         } else if (pageToShow === 'results') {
             inputPage.classList.remove('active');
@@ -69,13 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const orderedInputs = [
             fiksniBPMInput, ciljaniBPMInput,
             satiCijeleInput, minuteCijeleInput, sekundeCijeleInput, frameoviCijeleInput,
-            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput, 
+            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput,
             satiKrajSegmentaInput, minuteKrajSegmentaInput, sekundeKrajSegmentaInput, frameoviKrajSegmentaInput,
             pragDriftaFrameoviInput
         ];
 
         orderedInputs.forEach((input, index) => {
-            if (!input) return; 
+            if (!input) return;
 
             input.addEventListener('input', () => {
                 let value = input.value;
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const maxFrames = Math.floor(currentFPS - 1);
 
                 if (value.trim() === '') {
-                    return; 
+                    return;
                 }
 
                 if (input.id === 'fiksniBPM' || input.id === 'ciljaniBPM') {
@@ -193,12 +193,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const CRLF = '\r\n'; 
+        // Promijenjeno: Koristi se Unix-stil za novi red
+        const CRLF = '\n';
 
         let xmlContent = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>${CRLF}`;
         xmlContent += `<edius:markerInfo xmlns:edius="http://www.grassvalley.com/ns/edius/markerListInfo">${CRLF}`;
-        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${CRLF}`; // Vraćeno na tab
-        
+        xmlContent += `\t<edius:formatVersion>4</edius:formatVersion>${CRLF}`;
+
         // Generate CreateDate
         const currentDate = new Date();
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -210,49 +211,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const hours = String(currentDate.getHours()).padStart(2, '0');
         const minutes = String(currentDate.getMinutes()).padStart(2, '0');
         const seconds = String(currentDate.getSeconds()).padStart(2, '0');
-        
-        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`; // Vraćeno na tab
-        
-        xmlContent += `\t<edius:markerLists>${CRLF}`; // Vraćeno na tab
+
+        xmlContent += `\t<edius:CreateDate>${dayOfWeek} ${month} ${dayOfMonth} ${hours}:${minutes}:${seconds} ${year}</edius:CreateDate>${CRLF}`;
+
+        xmlContent += `\t<edius:markerLists>${CRLF}`;
 
         edlMarkers.forEach((marker, index) => {
             const markerNo = index + 1;
-            const anchorValue = 1; 
+            const anchorValue = 1;
             const positionTimecode = marker.timecode;
-            const durationValue = '--:--:--:--'; 
-            const colorValue = '0xffffffff'; 
+            const durationValue = '--:--:--:--';
+            const colorValue = '0xffffffff';
 
             let commentXml = '';
             if (marker.comment.trim() === '') {
-                commentXml = `<edius:comment/>`; 
+                commentXml = `<edius:comment/>`;
             } else {
                 commentXml = `<edius:comment>${escapeXml(marker.comment)}</edius:comment>`;
             }
 
-            xmlContent += `\t\t<edius:marker>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t${commentXml}${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${CRLF}`; // Vraćeno na tab
-            xmlContent += `\t\t</edius:marker>${CRLF}`; // Vraćeno na tab
+            xmlContent += `\t\t<edius:marker>${CRLF}`;
+            xmlContent += `\t\t\t<edius:no>${markerNo}</edius:no>${CRLF}`;
+            xmlContent += `\t\t\t<edius:anchor>${anchorValue}</edius:anchor>${CRLF}`;
+            xmlContent += `\t\t\t<edius:position>${positionTimecode}</edius:position>${CRLF}`;
+            xmlContent += `\t\t\t<edius:duration>${durationValue}</edius:duration>${CRLF}`;
+            xmlContent += `\t\t\t${commentXml}${CRLF}`;
+            xmlContent += `\t\t\t<edius:color>${colorValue}</edius:color>${CRLF}`;
+            xmlContent += `\t\t</edius:marker>${CRLF}`;
         });
 
-        xmlContent += `\t</edius:markerLists>${CRLF}`; // Vraćeno na tab
+        xmlContent += `\t</edius:markerLists>${CRLF}`;
         xmlContent += `</edius:markerInfo>${CRLF}`;
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.xml`;
 
+        // Promijenjeno: Uklonjeno eksplicitno dodavanje BOM-a.
+        // TextEncoder('utf-16le') u većini modernih preglednika neće dodati BOM po defaultu,
+        // a preglednik bi trebao pravilno spremiti UTF-16 datoteku.
         const encoder = new TextEncoder('utf-16le');
-        const bom = new Uint8Array([0xFF, 0xFE]); 
         const encodedContent = encoder.encode(xmlContent);
 
-        const combined = new Uint8Array(bom.length + encodedContent.length);
-        combined.set(bom, 0); 
-        combined.set(encodedContent, bom.length);
-
-        const blob = new Blob([combined], { type: 'application/xml' }); 
+        // Promijenjeno: Blob se stvara direktno iz kodiranog sadržaja, bez BOM-a
+        const blob = new Blob([encodedContent], { type: 'application/xml' });
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function izracunajMarkere() {
-        console.log('Calculate button clicked. Starting calculation...'); 
+        console.log('Calculate button clicked. Starting calculation...');
 
         const fiksniBPM = parseFloat(fiksniBPMInput.value);
         const ciljaniBPM = parseFloat(ciljaniBPMInput.value);
@@ -282,9 +282,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const frameoviPocetakSegmenta = parseInt(frameoviPocetakSegmentaInput.value) || 0;
 
         const satiKrajSegmenta = parseInt(satiKrajSegmentaInput.value) || 0;
-        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0; 
-        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0; 
-        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0; 
+        const minuteKrajSegmenta = parseInt(minuteKrajSegmentaInput.value) || 0;
+        const sekundeKrajSegmenta = parseInt(sekundeKrajSegmentaInput.value) || 0;
+        const frameoviKrajSegmenta = parseInt(frameoviKrajSegmentaInput.value) || 0;
 
         const mjeraTakta = parseInt(mjeraTaktaSelect.value);
 
@@ -321,157 +321,4 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage = `Molimo unesite ispravno trajanje cijele datoteke (0-${Math.floor(FPS - 1)} frameova).`;
         }
         else if (
-            typeof satiPocetakSegmenta !== 'number' || satiPocetakSegmenta < 0 ||
-            typeof minutePocetakSegmenta !== 'number' || minutePocetakSegmenta < 0 || minutePocetakSegmenta > 59 ||
-            typeof sekundePocetakSegmenta !== 'number' || sekundePocetakSegmenta < 0 || sekundePocetakSegmenta > 59 ||
-            typeof frameoviPocetakSegmenta !== 'number' || frameoviPocetakSegmenta < 0 || frameoviPocetakSegmenta >= FPS
-        ) {
-            errorMessage = `Molimo unesite ispravan timecode početka glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
-        }
-        else if (
-            typeof satiKrajSegmenta !== 'number' || satiKrajSegmenta < 0 ||
-            typeof minuteKrajSegmenta !== 'number' || minuteKrajSegmenta < 0 || minuteKrajSegmenta > 59 ||
-            typeof sekundeKrajSegmenta !== 'number' || sekundeKrajSegmenta < 0 || sekundeKrajSegmenta > 59 ||
-            typeof frameoviKrajSegmenta !== 'number' || frameoviKrajSegmenta < 0 || frameoviKrajSegmenta >= FPS
-        ) {
-            errorMessage = `Molimo unesite ispravan timecode kraja glazbenog segmenta (0-${Math.floor(FPS - 1)} frameova).`;
-        }
-        else if (isNaN(mjeraTakta) || mjeraTakta <= 0) {
-            errorMessage = 'Molimo odaberite ispravnu mjeru takta (broj udaraca mora biti pozitivan).';
-        }
-        else if (isNaN(pragDriftaFrameovi) || pragDriftaFrameovi < 0) {
-            errorMessage = 'Molimo unesite ispravan prag drifta (pozitivan broj ili nula).';
-        }
-        else if (ukupnoFrameovaCijele <= 0) {
-            errorMessage = `Ukupno trajanje fizičke datoteke mora biti veće od nule. Molimo unesite ispravno trajanje.`;
-        }
-        else if (ukupnoFrameovaPocetakSegmenta >= ukupnoFrameovaCijele) {
-            errorMessage = `Početak glazbenog segmenta ne može biti veći ili jednak ukupnoj duljini fizičke datoteke.`;
-        }
-        else if (ukupnoFrameovaKrajSegmenta <= ukupnoFrameovaPocetakSegmenta) {
-            errorMessage = `Timecode kraja segmenta mora biti veći od timecodea početka segmenta.`;
-        }
-        else if (ukupnoFrameovaSegment <= 0) {
-            errorMessage = `Glazbeni segment mora imati duljinu veću od nule.`;
-        }
-        else if (ukupnoFrameovaKrajSegmenta > ukupnoFrameovaCijele) {
-            errorMessage = `Timecode kraja segmenta (${formatFramesToTimecode(ukupnoFrameovaKrajSegmenta, FPS)}) prelazi ukupnu duljinu fizičke datoteke.`;
-        }
-
-        let errorParagraph = inputPage.querySelector('.error-message');
-        if (errorParagraph) {
-            errorParagraph.remove(); 
-        }
-
-        if (errorMessage) {
-            errorParagraph = document.createElement('p');
-            errorParagraph.classList.add('error-message');
-            errorParagraph.textContent = errorMessage;
-            inputPage.insertBefore(errorParagraph, calculateButton);
-            showPage('input'); 
-            markeriZaIspravakDiv.innerHTML = ''; 
-            noMarkersMessage.style.display = 'none';
-            exportEdlButton.style.display = 'none';
-            edlMarkers = []; 
-            return; 
-        } else {
-            showPage('results');
-        }
-
-        const ciljTrajanjeSekundeSegment = ukupnoFrameovaSegment / FPS;
-        const ciljaniBrojBeatova = Math.round(ciljaniBPM * (ciljTrajanjeSekundeSegment / 60));
-
-        const stvarniTrajanjeSekundeSegment = ukupnoFrameovaSegment / FPS;
-        const stvarniBrojBeatova = Math.round(fiksniBPM * (stvarniTrajanjeSekundeSegment / 60));
-
-        const ciljanaDuljinaSegmentaFrameovi = (ciljaniBrojBeatova / ciljaniBPM) * 60 * FPS;
-        const stvarnaDuljinaSegmentaFrameoviFiksniBPM = (stvarniBrojBeatova / fiksniBPM) * 60 * FPS;
-
-        const ukupniDriftFrameovi = stvarnaDuljinaSegmentaFrameoviFiksniBPM - ciljanaDuljinaSegmentaFrameovi;
-
-        rezultatCiljaniBPM.textContent = ciljaniBPM.toFixed(4);
-        rezultatIzmjereniBPM.textContent = fiksniBPM.toFixed(4);
-        rezultatUkupanBrojBeatovaCilj.textContent = ciljaniBrojBeatova;
-        rezultatUkupanBrojBeatovaStvarno.textContent = stvarniBrojBeatova;
-        rezultatUkupniDrift.textContent = `${ukupniDriftFrameovi.toFixed(2)} frameova`;
-
-        let driftNapomena = '';
-        if (Math.abs(ukupniDriftFrameovi) < 0.1) {
-            driftNapomena = 'Gotovo savršeno usklađeno na kraju segmenta!';
-        } else if (ukupniDriftFrameovi > 0) {
-            driftNapomena = `Glazba kasni za video za ${ukupniDriftFrameovi.toFixed(2)} frameova na kraju segmenta. Trebat će je ubrzavati.`;
-        } else {
-            driftNapomena = `Glazba pretiče video za ${Math.abs(ukupniDriftFrameovi).toFixed(2)} frameova na kraju segmenta. Trebat će je usporavati.`;
-        }
-        rezultatNapomenaDrift.textContent = driftNapomena;
-
-        markeriZaIspravakDiv.innerHTML = '';
-        edlMarkers = []; // Clear previous markers
-        let korekcijePotrebne = false;
-
-        const ciljaniBeatDurationFrames = (60 / ciljaniBPM) * FPS;
-        const stvarniBeatDurationFrames = (60 / fiksniBPM) * FPS;
-
-        for (let i = 0; ; i++) {
-            const ocekivaniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * ciljaniBeatDurationFrames);
-            const stvarniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * stvarniBeatDurationFrames);
-
-            if (ocekivaniBeatTimeFrames > ukupnoFrameovaKrajSegmenta + FPS) {
-                break;
-            }
-
-            if (ocekivaniBeatTimeFrames >= ukupnoFrameovaPocetakSegmenta) {
-                let currentDrift = stvarniBeatTimeFrames - ocekivaniBeatTimeFrames; 
-
-                const isLastBeat = ocekivaniBeatTimeFrames + ciljaniBeatDurationFrames > ukupnoFrameovaKrajSegmenta;
-                if (Math.abs(currentDrift) >= pragDriftaFrameovi || (isLastBeat && Math.abs(currentDrift) > 0.1)) {
-                    korekcijePotrebne = true;
-                    const markerTimecode = formatFramesToTimecode(Math.round(ocekivaniBeatTimeFrames), FPS);
-                    const driftClass = currentDrift > 0 ? 'drift-positive' : 'drift-negative';
-                    const actionText = currentDrift > 0 ? 'Ubrzati' : 'Usporiti';
-                    const commentText = `ISPRAVAK_Beat_${i + 1}_Drift_${currentDrift > 0 ? '+' : ''}${currentDrift.toFixed(2)}f`;
-
-                    edlMarkers.push({
-                        timecode: markerTimecode,
-                        totalFrames: ocekivaniBeatTimeFrames,
-                        comment: commentText
-                    });
-
-                    const p = document.createElement('p');
-                    p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
-                    markeriZaIspravakDiv.appendChild(p);
-                }
-            }
-        }
-
-        if (!korekcijePotrebne && edlMarkers.length === 0) { 
-            noMarkersMessage.style.display = 'block';
-            exportEdlButton.style.display = 'none';
-        } else {
-            noMarkersMessage.style.display = 'none'; 
-            exportEdlButton.style.display = 'block'; 
-        }
-
-        document.querySelectorAll('#rezultati p').forEach(p => p.style.display = 'block');
-        document.querySelector('#rezultati h3').style.display = 'block';
-    }
-
-    calculateButton.addEventListener('click', izracunajMarkere);
-    
-    backButton.addEventListener('click', () => {
-        showPage('input');
-        markeriZaIspravakDiv.innerHTML = '';
-        noMarkersMessage.style.display = 'none';
-        exportEdlButton.style.display = 'none';
-        edlMarkers = [];
-    });
-    exportEdlButton.addEventListener('click', generateAndDownloadXML);
-
-    fpsHelpText.textContent = `Trenutni FPS: ${parseFloat(fpsSelect.value)}`;
-    frameoviCijeleInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviKrajSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-
-    showPage('input');
-    exportEdlButton.style.display = 'none'; 
-});
+            typeof satiPocetakSegmenta !== 'number' ||
