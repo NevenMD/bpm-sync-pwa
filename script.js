@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageToShow === 'input') {
             inputPage.classList.add('active');
             resultsPage.classList.remove('active');
+            fiksniBPMInput.focus(); // Postavlja fokus na prvo polje
         } else if (pageToShow === 'results') {
             inputPage.classList.remove('active');
             resultsPage.classList.add('active');
@@ -83,21 +84,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const maxFrames = Math.floor(currentFPS - 1);
 
                 if (value.trim() === '') {
-                    return; // Don't advance on empty input
+                    return; // Ne prebacuj fokus na prazan unos
                 }
 
                 // Logika za BPM polja (fiksniBPM i ciljaniBPM)
                 if (input.id === 'fiksniBPM' || input.id === 'ciljaniBPM') {
                     if (value.includes('.')) {
                         const decimalPart = value.split('.')[1];
-                        // Advance only when 4 or more decimal digits are entered
+                        // Prebacuj fokus tek kada se unesu 4 ili više decimalnih znamenki
                         if (decimalPart && decimalPart.length >= 4) {
                             if (nextInput) {
                                 nextInput.focus();
                             }
                         }
                     } else if (value.length >= 3 && !isNaN(parseFloat(value))) {
-                        // Advance for whole numbers with 3+ digits (e.g., 120)
+                        // Prebacuj fokus za cijele brojeve s 3+ znamenki
                         if (nextInput) {
                             nextInput.focus();
                         }
@@ -106,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Logika za polja sata, minute, sekunde
                 else if (input.id.includes('sati') || input.id.includes('minute') || input.id.includes('sekunde')) {
                     const parsedValue = parseInt(value);
-                    // Advance if 2 digits are entered, and it's a valid number for minutes/seconds (0-59) or for hours
+                    // Prebacuj fokus ako su unesene 2 znamenke i to je valjan broj za minute/sekunde (0-59) ili sate
                     if (!isNaN(parsedValue) && value.length === 2 && (input.id.includes('sati') || (parsedValue >= 0 && parsedValue <= 59))) {
                         if (nextInput) {
                             nextInput.focus();
@@ -118,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parsedValue = parseInt(value);
                     if (!isNaN(parsedValue)) {
                         const maxFramesStrLength = String(maxFrames).length;
-                        // Advance if value length is equal to max frames digit length AND it's within range
-                        // OR if it's 2 digits for FPS > 10 (e.g., 25, 30, 60)
+                        // Prebacuj fokus ako je duljina vrijednosti jednaka duljini znamenki max frameova I unutar je raspona
+                        // ILI ako su 2 znamenke za FPS > 10 (npr. 25, 30, 60)
                         if ((value.length >= maxFramesStrLength && parsedValue >= 0 && parsedValue <= maxFrames) || (value.length === 2 && currentFPS > 10)) {
                             if (input === frameoviCijeleInput) {
                                 satiPocetakSegmentaInput.focus();
@@ -128,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             } else if (input === frameoviKrajSegmentaInput) {
                                 mjeraTaktaSelect.focus();
                             }
-                        } else if (value.length === 1 && currentFPS <= 10 && parsedValue >= 0 && parsedValue <= maxFrames) { // For FPS <= 10 (single digit frames)
+                        } else if (value.length === 1 && currentFPS <= 10 && parsedValue >= 0 && parsedValue <= maxFrames) { // Za FPS <= 10 (jednoznamenkasti frameovi)
                             if (input === frameoviCijeleInput) {
                                 satiPocetakSegmentaInput.focus();
                             } else if (input === frameoviPocetakSegmentaInput) {
@@ -347,99 +348,3 @@ document.addEventListener('DOMContentLoaded', () => {
         const stvarniBrojBeatova = Math.round(fiksniBPM * (stvarniTrajanjeSekundeSegment / 60));
 
         const ciljanaDuljinaSegmentaFrameovi = (ciljaniBrojBeatova / ciljaniBPM) * 60 * FPS;
-        const stvarnaDuljinaSegmentaFrameoviFiksniBPM = (stvarniBrojBeatova / fiksniBPM) * 60 * FPS;
-
-        const ukupniDriftFrameovi = stvarnaDuljinaSegmentaFrameoviFiksniBPM - ciljanaDuljinaSegmentaFrameovi;
-
-
-        // ISPIS OSNOVNIH REZULTATA
-        rezultatCiljaniBPM.textContent = ciljaniBPM.toFixed(4);
-        rezultatIzmjereniBPM.textContent = fiksniBPM.toFixed(4);
-        rezultatUkupanBrojBeatovaCilj.textContent = ciljaniBrojBeatova;
-        rezultatUkupanBrojBeatovaStvarno.textContent = stvarniBrojBeatova;
-        rezultatUkupniDrift.textContent = `${ukupniDriftFrameovi.toFixed(2)} frameova`;
-
-        let driftNapomena = '';
-        if (Math.abs(ukupniDriftFrameovi) < 0.1) {
-            driftNapomena = 'Gotovo savršeno usklađeno na kraju segmenta!';
-        } else if (ukupniDriftFrameovi > 0) {
-            driftNapomena = `Glazba kasni za video za ${ukupniDriftFrameovi.toFixed(2)} frameova na kraju segmenta. Trebat će je ubrzavati.`;
-        } else {
-            driftNapomena = `Glazba pretiče video za ${Math.abs(ukupniDriftFrameovi).toFixed(2)} frameova na kraju segmenta. Trebat će je usporavati.`;
-        }
-        rezultatNapomenaDrift.textContent = driftNapomena;
-
-        // --- IZRAČUN MARKERA ZA ISPRAVAK ---
-        markeriZaIspravakDiv.innerHTML = '';
-        edlMarkers = [];
-        let korekcijePotrebne = false;
-
-        const ciljaniBeatDurationFrames = (60 / ciljaniBPM) * FPS;
-        const stvarniBeatDurationFrames = (60 / fiksniBPM) * FPS;
-
-        for (let i = 0; ; i++) {
-            const ocekivaniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * ciljaniBeatDurationFrames);
-            const stvarniBeatTimeFrames = ukupnoFrameovaPocetakSegmenta + (i * stvarniBeatDurationFrames);
-
-            if (ocekivaniBeatTimeFrames > ukupnoFrameovaKrajSegmenta + FPS) {
-                break;
-            }
-
-            if (ocekivaniBeatTimeFrames >= ukupnoFrameovaPocetakSegmenta) {
-                currentDrift = stvarniBeatTimeFrames - ocekivaniBeatTimeFrames;
-
-                const isLastBeat = ocekivaniBeatTimeFrames + ciljaniBeatDurationFrames > ukupnoFrameovaKrajSegmenta;
-                if (Math.abs(currentDrift) >= pragDriftaFrameovi || (isLastBeat && Math.abs(currentDrift) > 0.1)) {
-                    korekcijePotrebne = true;
-                    const markerTimecode = formatFramesToTimecode(Math.round(ocekivaniBeatTimeFrames), FPS);
-                    const driftClass = currentDrift > 0 ? 'drift-positive' : 'drift-negative';
-                    const actionText = currentDrift > 0 ? 'Ubrzati' : 'Usporiti';
-                    const commentText = `ISPRAVAK_Beat_${i + 1}_Drift_${currentDrift > 0 ? '+' : ''}${currentDrift.toFixed(2)}f`;
-
-                    const p = document.createElement('p');
-                    p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
-                    markeriZaIspravakDiv.appendChild(p);
-
-                    edlMarkers.push({
-                        timecode: markerTimecode,
-                        totalFrames: ocekivaniBeatTimeFrames,
-                        comment: commentText
-                    });
-
-                    currentDrift = 0; 
-                }
-            }
-        }
-
-        if (!korekcijePotrebne && edlMarkers.length === 0) { 
-            noMarkersMessage.style.display = 'block';
-            exportEdlButton.style.display = 'none';
-        } else {
-            noMarkersMessage.style.display = 'none';
-            exportEdlButton.style.display = 'block'; 
-        }
-
-        document.querySelectorAll('#rezultati p').forEach(p => p.style.display = 'block');
-        document.querySelector('#rezultati h3').style.display = 'block';
-    }
-
-    // --- Postavljanje slušatelja događaja (Event Listeners) ---
-    calculateButton.addEventListener('click', izracunajMarkere);
-    backButton.addEventListener('click', () => {
-        showPage('input');
-        markeriZaIspravakDiv.innerHTML = '';
-        noMarkersMessage.style.display = 'none';
-        exportEdlButton.style.display = 'none';
-        edlMarkers = [];
-    });
-    exportEdlButton.addEventListener('click', generateAndDownloadEDL);
-
-    // Initial setup for FPS help text (on first load)
-    fpsHelpText.textContent = `Trenutni FPS: ${parseFloat(fpsSelect.value)}`;
-    frameoviCijeleInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviPocetakSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-    frameoviKrajSegmentaInput.setAttribute('max', Math.floor(parseFloat(fpsSelect.value) - 1));
-
-    showPage('input');
-    exportEdlButton.style.display = 'none'; 
-});
