@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const orderedInputs = [
             fiksniBPMInput, ciljaniBPMInput,
             satiCijeleInput, minuteCijeleInput, sekundeCijeleInput, frameoviCijeleInput,
-            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePocetakSegmentaInput, frameoviPocetakSegmentaInput,
+            satiPocetakSegmentaInput, minutePocetakSegmentaInput, sekundePijedinihInput, frameoviPocetakSegmentaInput,
             satiKrajSegmentaInput, minuteKrajSegmentaInput, sekundeKrajSegmentaInput, frameoviKrajSegmentaInput,
             pragDriftaFrameoviInput
         ];
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showPage('input'); 
             markeriZaIspravakDiv.innerHTML = ''; 
             noMarkersMessage.style.display = 'none';
-            exportEdlButton.style.display = 'none'; 
+            exportEdlButton.style.display = 'none';
             edlMarkers = []; 
             return; 
         } else {
@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rezultatCiljaniBPM.textContent = ciljaniBPM.toFixed(4);
         rezultatIzmjereniBPM.textContent = fiksniBPM.toFixed(4);
         rezultatUkupanBrojBeatovaCilj.textContent = ciljaniBrojBeatova;
-        rezultatUkupanBroTjBeatovaStvarno.textContent = stvarniBrojBeatova;
+        rezultatUkupanBrojBeatovaStvarno.textContent = stvarniBrojBeatova;
         rezultatUkupniDrift.textContent = `${ukupniDriftFrameovi.toFixed(2)} frameova`;
 
         let driftNapomena = '';
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             noMarkersMessage.style.display = 'block';
             exportEdlButton.style.display = 'none';
         } else {
-            noMarkersMessage.style.display = 'block';
+            noMarkersMessage.style.display = 'none'; // ISPRAVAK OVDJE: Sakrij poruku "Nema markera" kada ima rezultata
             exportEdlButton.style.display = 'block'; 
         }
 
