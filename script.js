@@ -186,6 +186,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Nova funkcija za pretvaranje stringa u UTF-16LE bajtove s BOM-om
+    // Ručno konstruiramo bajtove kako bismo osigurali ispravno kodiranje.
+    function stringToUTF16LEBytes(str) {
+        const arr = [];
+        // UTF-16 Little Endian BOM (FF FE)
+        arr.push(0xFF, 0xFE);
+
+        for (let i = 0; i < str.length; i++) {
+            const charCode = str.charCodeAt(i);
+            // Dodajemo niži bajt pa viši bajt za Little Endian
+            arr.push(charCode & 0xFF);
+            arr.push((charCode >> 8) & 0xFF);
+        }
+        return new Uint8Array(arr);
+    }
+
     // NEW FUNCTION: generateAndDownloadXML
     function generateAndDownloadXML() {
         if (edlMarkers.length === 0) {
@@ -245,13 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const fileName = `BPM_Sync_Markers_${new Date().toISOString().slice(0, 10)}.xml`;
 
-        // Oslanjam se na TextEncoder da ispravno rukuje UTF-16LE, bez ručnog dodavanja BOM-a.
-        // Ovo bi trebalo spriječiti probleme s duplim BOM-om ili pogrešnu interpretaciju.
-        const encoder = new TextEncoder('utf-16le');
-        const encodedContent = encoder.encode(xmlContent);
+        // Pretvaranje XML stringa u UTF-16LE bajtove s eksplicitnim BOM-om
+        const encodedContentBytes = stringToUTF16LEBytes(xmlContent);
 
-        // Tip datoteke postavljen na 'text/xml'
-        const blob = new Blob([encodedContent], { type: 'text/xml' });
+        // Kreiranje Bloba iz bajtovskog niza
+        const blob = new Blob([encodedContentBytes], { type: 'text/xml' });
 
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
