@@ -207,20 +207,29 @@ document.addEventListener('DOMContentLoaded', () => {
         let edlContent = 'TITLE: BPM_Sync_Markers\n';
         edlContent += `FCM: NON-DROP FRAME\n\n`; // Obavezno prazna linija nakon FCM
 
-        edlMarkers.forEach((marker, index) => {
-            const eventNum = String(index + 1).padStart(3, '0');
-            const reelId = 'AX'; // Promijenjeno u 'AX' za bolju kompatibilnost s Ediusom
-            const track = 'V'; // Video track
-            const type = 'C'; // Promijenjeno u 'C' (Cut) jer Edius to često očekuje i za markere
-            const clipName = 'DUMMYCLIP'; // **NOVO: Dodan dummy clip name**
-            
-            // sourceOut i destOut neka budu marker.totalFrames + 1 frame za trajanje od 1 frame
-            const sourceOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, parseFloat(fpsSelect.value)); 
-            const destOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, parseFloat(fpsSelect.value)); 
+        // **NOVO: Dodavanje fiktivnog prvog događaja za Edius kompatibilnost**
+        const fps = parseFloat(fpsSelect.value);
+        const dummyClipDuration = Math.round(fps * 10); // Npr. 10 sekundi trajanja
+        const dummyClipOut = formatFramesToTimecode(dummyClipDuration, fps);
 
-            // AŽURIRANO ZA EDIUS: Izrazito fiksirani razmaci za Edius format
-            // Broj razmaka je točno podešen prema primjerima EDL-a koji rade u Ediusu
-            // Prilagođeno zbog dodavanja clipNamea
+        // Formatiranje linije s razmacima za Edius. Broj razmaka je ključan.
+        //   EventNum ReelID  ClipName     Track Type   Source In  Source Out Dest In    Dest Out
+        //   001     AX       DUMMY_CLIP  V     C      00:00:00:00 00:00:00:10 00:00:00:00 00:00:00:10
+        edlContent += `001  AX       DUMMY_CLIP  V     C      00:00:00:00 ${dummyClipOut} 00:00:00:00 ${dummyClipOut}\n`;
+
+        edlMarkers.forEach((marker, index) => {
+            // Indexiranje kreće od 2 jer je 001 dummy klip
+            const eventNum = String(index + 2).padStart(3, '0'); 
+            const reelId = 'AX';
+            const track = 'V';
+            const type = 'C'; 
+            const clipName = 'DUMMY_MARKER'; // Može biti i "DUMMY_CLIP" ako je isto za sve
+
+            // sourceOut i destOut neka budu marker.totalFrames + 1 frame za trajanje od 1 frame
+            const sourceOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
+            const destOut = formatFramesToTimecode(Math.round(marker.totalFrames) + 1, fps); 
+
+            // Prilagođeno zbog dodavanja clipNamea i usklađivanja razmaka
             edlContent += `${eventNum}  ${reelId}     ${clipName}  ${track}     ${type}    ${marker.timecode} ${sourceOut} ${marker.timecode} ${destOut}\n`;
             edlContent += `* COMMENT: ${marker.comment}\n`; // Standardni format za komentare
         });
@@ -415,15 +424,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const actionText = currentDrift > 0 ? 'Ubrzati' : 'Usporiti';
                     const commentText = `ISPRAVAK_Beat_${i + 1}_Drift_${currentDrift > 0 ? '+' : ''}${currentDrift.toFixed(2)}f`;
 
-                    const p = document.createElement('p');
-                    p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
-                    markeriZaIspravakDiv.appendChild(p);
-
                     edlMarkers.push({
                         timecode: markerTimecode,
                         totalFrames: ocekivaniBeatTimeFrames,
                         comment: commentText
                     });
+
+                    // Prikaz na stranici
+                    const p = document.createElement('p');
+                    p.innerHTML = `Beat #${i + 1} (${markerTimecode}): <span class="${driftClass}">${actionText} za ${Math.abs(currentDrift).toFixed(2)} frameova</span>`;
+                    markeriZaIspravakDiv.appendChild(p);
 
                     currentDrift = 0; 
                 }
