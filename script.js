@@ -20,6 +20,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let loadedXmlData = null; // Varijabla za pohranu parsiranih XML podataka
     let lastGeneratedXmlContent = ''; // Varijabla za pohranu zadnje generiranog XML-a
 
+    // **NOVI LOGOVI:** Provjera je li svaki element pronađen
+    if (fiksniBPMInput) console.log("fiksniBPMInput pronađen."); else console.error("fiksniBPMInput NIJE pronađen.");
+    if (ciljaniBPMInput) console.log("ciljaniBPMInput pronađen."); else console.error("ciljaniBPMInput NIJE pronađen.");
+    if (FPSInput) console.log("FPSInput pronađen."); else console.error("FPSInput NIJE pronađen.");
+    if (pragDriftaFrameoviInput) console.log("pragDriftaFrameoviInput pronađen."); else console.error("pragDriftaFrameoviInput NIJE pronađen.");
+    if (pocetakGlazbenogSegmentaInput) console.log("pocetakGlazbenogSegmentaInput pronađen."); else console.error("pocetakGlazbenogSegmentaInput NIJE pronađen.");
+    if (krajGlazbenogSegmentaInput) console.log("krajGlazbenogSegmentaInput pronađen."); else console.error("krajGlazbenogSegmentaInput NIJE pronađen.");
+    if (ukupnoTrajanjeDatotekeInput) console.log("ukupnoTrajanjeDatotekeInput pronađen."); else console.error("ukupnoTrajanjeDatotekeInput NIJE pronađen.");
+    if (calculateButton) console.log("calculateButton pronađen."); else console.error("calculateButton NIJE pronađen.");
+    if (generateXmlButton) console.log("generateXmlButton pronađen."); else console.error("generateXmlButton NIJE pronađen.");
+    if (markeriOutput) console.log("markeriOutput pronađen."); else console.error("markeriOutput NIJE pronađen.");
+    if (xmlOutput) console.log("xmlOutput pronađen."); else console.error("xmlOutput NIJE pronađen.");
+    if (ediusXmlFile) console.log("ediusXmlFile pronađen."); else console.error("ediusXmlFile NIJE pronađen.");
+    if (xmlStatus) console.log("xmlStatus pronađen."); else console.error("xmlStatus NIJE pronađen.");
+    if (downloadXmlButton) console.log("downloadXmlButton pronađen."); else console.error("downloadXmlButton NIJE pronađen.");
+    // KRAJ NOVIH LOGOVA
+
     // Provjera da li je gumb pronađen
     if (calculateButton) {
         console.log("Gumb 'Izračunaj Markere' pronađen u DOM-u.");
@@ -223,7 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
             outputHtml += `<p style="color: green; font-weight: bold;">Drift (${(drift * fps).toFixed(2)} frameova) je unutar prihvatljivih granica (${pragDriftaFrameovi} frameova).</p>`;
         }
 
-        markeriOutput.innerHTML = outputHtml;
+        // **NOVI LOGOVI:** Provjera generiranog HTML-a i postavljanja innerHTML-a
+        console.log("Generirani outputHtml:", outputHtml);
+        if (markeriOutput) {
+            markeriOutput.innerHTML = outputHtml; // Ova linija postavlja HTML sadržaj
+            console.log("markeriOutput.innerHTML je postavljen.");
+        } else {
+            console.error("markeriOutput je null, ne može se postaviti innerHTML.");
+        }
+        // KRAJ NOVIH LOGOVA
 
         // Generiranje markera
         const markeri = [];
@@ -251,8 +276,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Dodaj zadnji marker (kraj datoteke)
         markeri.push({ no: markerNo++, position: framesToTimecode(ukupnoTrajanjeDatotekeFrames, fps), comment: '' });
 
+        // **NOVI LOGOVI:** Provjera statusa generateXmlButton
+        if (generateXmlButton) {
+            generateXmlButton.disabled = false; // Omogući gumb za generiranje XML-a
+            console.log("generateXmlButton.disabled je postavljen na false.");
+        } else {
+            console.error("generateXmlButton je null, ne može se postaviti disabled.");
+        }
+        // KRAJ NOVIH LOGOVA
 
-        generateXmlButton.disabled = false; // Omogući gumb za generiranje XML-a
         // Spremi markere za generiranje XML-a
         window.generatedMarkers = markeri;
 
@@ -423,32 +455,3 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadedXmlData = null; // Resetirajte loadedXmlData u slučaju greške
                         // Opcionalno: Resetirajte input polja na 00:00:00:00 ili prazno
                         pocetakGlazbenogSegmentaInput.value = '00:00:00:00';
-                        krajGlazbenogSegmentaInput.value = '00:00:00:00';
-                        ukupnoTrajanjeDatotekeInput.value = '00:00:00:00';
-                    });
-            } else {
-                xmlStatus.textContent = 'Nije odabrana XML datoteka.';
-                loadedXmlData = null;
-            }
-        });
-    } else {
-        console.warn("Upozorenje: Input za XML datoteku s ID-jem 'ediusXmlFile' NIJE PRONAĐEN.");
-    }
-
-
-    // Funkcija koja se poziva na klik gumba "Izračunaj Markere"
-    function izracunajMarkere() {
-        console.log("Funkcija izracunajMarkere se pokreće.");
-        // Pozovite calculateBPM, koja će obaviti sve provjere i izračune
-        const results = calculateBPM();
-        if (results) {
-            console.log("Izračuni završeni, rezultati:", results);
-            // Ako su izračuni uspješni, rezultati su u 'results' objektu.
-            // Ovdje možete dodatno manipulirati rezultatima ako je potrebno.
-            // Npr. automatski generirati XML nakon izračuna ako je to željeno ponašanje.
-            // generateXml(results.markeri, results.fps);
-        } else {
-            console.log("calculateBPM nije vratila rezultate (vjerojatno zbog greške ili validacije).");
-        }
-    }
-});
