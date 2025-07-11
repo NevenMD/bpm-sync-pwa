@@ -49,12 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resultsPage) { console.log('results-page pronađen.'); } else { console.error('results-page NIJE pronađen.'); }
 
 
-    // Globalne varijable za pohranu učitanih XML podataka
+    // Globalne varijable za pohranu učitanih XML podataka i generiranih markera
     let globalFileStartTC = '00:00:00:00';
     let globalFileEndTC = '00:00:00:00';
     let globalMusicStartTC = null;
     let globalMusicEndTC = null;
-
+    let generatedMarkers = []; // Niz za pohranu generiranih markera u formatu pogodnom za XML
+    let currentFPS = 25; // Pohranite trenutni FPS
 
     if (calculateButton) {
         calculateButton.addEventListener('click', () => {
@@ -63,6 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Dodaj event listenere za XML gumbe
+    if (generateXmlButton) {
+        generateXmlButton.addEventListener('click', () => {
+            console.log('Gumb \'Generiraj XML\' je kliknut!');
+            generateXml();
+        });
+    }
+
+    if (downloadXmlButton) {
+        downloadXmlButton.addEventListener('click', () => {
+            console.log('Gumb \'Preuzmi XML\' je kliknut!');
+            downloadXml();
+        });
+    }
 
     function timecodeToFrames(timecode, fps) {
         if (!timecode || typeof timecode !== 'string') {
@@ -104,6 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dodan decimalniBroj kao parametar
     function calculateBPM(fiksniBPM, ciljaniBPM, fps, pragDriftaFrameovi, musicStartFrames, musicEndFrames, totalFileFrames, decimalniBroj) {
         console.log('Funkcija calculateBPM se pokreće.');
+
+        // Pohrani trenutni FPS
+        currentFPS = parseFloat(fps);
 
         // Prioritet XML podacima ako su globalne varijable postavljene
         if (globalMusicStartTC !== null && globalMusicEndTC !== null) {
@@ -182,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         outputHtml += '<hr><h3>Predloženi markeri:</h3><div class="markers-list">';
 
+        // Resetiraj generatedMarkers prije generiranja novih
+        generatedMarkers = [];
+
         // Generiranje novih markera
         let currentFrame = musicStartFrames;
         let beatCounter = 0;
@@ -205,6 +226,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             outputHtml += `<p>${markerText}</p>`;
+
+            // Dodaj marker u generatedMarkers niz
+            generatedMarkers.push({
+                position: timecode,
+                comment: `Beat ${beatCounter}`
+            });
+
             currentFrame += razmakIzmeduMarkeraFrameovi;
             beatCounter++;
         }
@@ -225,6 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('generateXmlButton.disabled je postavljen na false i display na block.');
         }
         if (downloadXmlButton) {
+            downloadXmlButton.disabled = false; // Omogući i gumb za preuzimanje
             downloadXmlButton.style.display = 'block'; // Dodano: Prikaži gumb za preuzimanje
             console.log('downloadXmlButton.style.display je postavljen na block.');
         }
@@ -232,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return {
             varijabilniBPM: varijabilniBPM,
-            markeri: [] // Ovdje bi se dodali markeri ako ih treba vratiti za daljnju obradu
+            markeri: generatedMarkers // Vrati generirane markere
         };
     }
 
@@ -250,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let musicEndFrames;
         let totalFileFrames;
 
-        // Provjeri jesu li globalne XML varijable popunjene
+        // Provjeri jesu li globalne XML varijale popunjene
         if (globalMusicStartTC !== null && globalMusicEndTC !== null && globalFileEndTC !== null) {
             musicStartFrames = timecodeToFrames(globalMusicStartTC, fps);
             musicEndFrames = timecodeToFrames(globalMusicEndTC, fps);
@@ -291,6 +320,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Funkcija za generiranje XML-a
+    function generateXml() {
+        console.log('Generiranje XML-a...');
+        if (generatedMarkers.length === 0) {
+            if (xmlOutput) {
+                xmlOutput.textContent = 'Nema generiranih markera za izvoz u XML.';
+            }
+            console.warn('Nema markera za generiranje XML-a.');
+            return;
+        }
+
+        const fps = currentFPS; // Koristi pohranjeni FPS
+
+        let xmlString = `<?xml version="1.0" encoding="UTF-8"?>
+<edius:markerlist version="2.0">
+    <edius:timeline version="2.0" frames="${timecodeToFrames(globalFileEndTC, fps)}" fps="${fps}">`;
+
+        // Dodavanje markera iz generatedMarkers niza
+        generatedMarkers.forEach(marker => {
+            xmlString += `
+        <edius:marker version="2.0">
+            <edius:position>${marker.position}</edius:position>
+            <edius:comment>${marker.comment}</edius:comment>
+        </edius:marker>`;
+        });
+
+        // Dodavanje glazba_pocetak i glazba_kraj markera ako postoje i nisu već među generiranima
+        if (globalMusicStartTC && !generatedMarkers.some(m => m.position === globalMusicStartTC && m.comment === "glazba_pocetak")) {
+            xmlString += `
+        <edius:marker version="2.0">
+            <edius:position>${globalMusicStartTC}</edius:position>
+            <edius:comment>glazba_pocetak</edius:comment>
+        </edius:marker>`;
+        }
+        if (globalMusicEndTC && !generatedMarkers.some(m => m.position === globalMusicEndTC && m.comment === "glazba_kraj")) {
+            xmlString += `
+        <edius:marker version="2.0">
+            <edius:position>${globalMusicEndTC}</edius:position>
+            <edius:comment>glazba_kraj</edius:comment>
+        </edius:marker>`;
+        }
+
+
+        xmlString += `
+    </edius:timeline>
+</edius:markerlist>`;
+
+        if (xmlOutput) {
+            xmlOutput.textContent = xmlString; // Prikazi XML u divu
+            xmlOutput.style.display = 'block'; // Osiguraj da je XML output div vidljiv
+            console.log('XML generiran i prikazan.');
+        }
+    }
+
+    // Funkcija za preuzimanje XML datoteke
+    function downloadXml() {
+        console.log('Preuzimanje XML datoteke...');
+        if (!xmlOutput || !xmlOutput.textContent) {
+            alert('Prvo generirajte XML!');
+            console.warn('Nema XML-a za preuzimanje.');
+            return;
+        }
+
+        const filename = 'markeri_bpm_sync.xml';
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/xml;charset=utf-8,' + encodeURIComponent(xmlOutput.textContent));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+        console.log(`XML datoteka "${filename}" preuzeta.`);
+    }
+
 
     if (ediusXmlFile) {
         ediusXmlFile.addEventListener('change', (event) => {
@@ -329,6 +435,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const markers = xmlDoc.querySelectorAll('edius\\:marker, marker'); // Podrška za edius:marker i marker
                 console.log('Pronađeni markeri (NodeList) (parseEdiusXmlFile):', markers);
                 console.log('Broj pronađenih markera (parseEdiusXmlFile):', markers.length);
+
+                // Pokušaj pronaći FPS iz XML-a
+                const timelineElement = xmlDoc.querySelector('edius\\:timeline, timeline');
+                if (timelineElement) {
+                    const xmlFps = timelineElement.getAttribute('fps');
+                    if (xmlFps) {
+                        currentFPS = parseFloat(xmlFps);
+                        if (fpsSelect) {
+                            fpsSelect.value = currentFPS; // Postavi odabrani FPS u input polje
+                            console.log(`FPS pročitan iz XML-a: ${currentFPS}`);
+                        }
+                    }
+                }
+
 
                 if (markers.length > 0) {
                     // Pronađi prvi i zadnji marker za ukupno trajanje datoteke
