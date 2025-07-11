@@ -1,5 +1,3 @@
-JavaScript
-
 // Globalne varijable za pohranu početnog i krajnjeg timecodea glazbenog segmenta
 // Ove varijable se postavljaju kada se učita EDIUS XML datoteka.
 let musicStartTC = null;
