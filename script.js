@@ -101,7 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .join(':');
     }
 
-    function calculateBPM(fiksniBPM, ciljaniBPM, fps, pragDriftaFrameovi, musicStartFrames, musicEndFrames, totalFileFrames) {
+    // Dodan decimalniBroj kao parametar
+    function calculateBPM(fiksniBPM, ciljaniBPM, fps, pragDriftaFrameovi, musicStartFrames, musicEndFrames, totalFileFrames, decimalniBroj) {
         console.log('Funkcija calculateBPM se pokreće.');
 
         // Prioritet XML podacima ako su globalne varijable postavljene
@@ -266,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
             pragDriftaFrameovi,
             musicStartFrames,
             musicEndFrames,
-            totalFileFrames
+            totalFileFrames,
+            decimalniBroj // PROSLIJEĐEN decimalniBroj kao argument
         );
 
         if (rezultati) {
