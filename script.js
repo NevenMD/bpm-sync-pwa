@@ -2,8 +2,12 @@
 // Ove varijable se postavljaju kada se učita EDIUS XML datoteka.
 let musicStartTC = null;
 let musicEndTC = null;
-let fileStartTC = null; // Prvi marker iz Edius XML-a
-let fileEndTC = null;   // Zadnji marker iz Edius XML-a
+let fileStartTC = null;    // Prvi marker iz Edius XML-a
+let fileEndTC = null;      // Zadnji marker iz Edius XML-a
+let autoMusicStartTC = null; // Timecode za automatski "glazba_pocetak"
+let autoMusicEndTC = null;   // Timecode za automatski "glazba_kraj"
+let midSegmentTC = null;     // Timecode za središnji marker
+
 
 // Globalna varijabla za pohranu izračunatih beat markera za generiranje XML-a
 let calculatedBeatMarkers = [];
@@ -13,24 +17,29 @@ const ediusXmlFileInput = document.getElementById('ediusXmlFile');
 const clearXmlButton = document.getElementById('clearXmlButton');
 const xmlStatus = document.getElementById('xmlStatus');
 
-const fiksniBPMInput = document.getElementById('fiksniBPM');
-const ciljaniBPMInput = document.getElementById('ciljaniBPM');
+// Novi ID-jevi za razdvojena BPM polja
+const fiksniBPMIntegerInput = document.getElementById('fiksniBPMInteger');
+const fiksniBPMDecimalInput = document.getElementById('fiksniBPMDecimal');
+const ciljaniBPMIntegerInput = document.getElementById('ciljaniBPMInteger');
+const ciljaniBPMDecimalInput = document.getElementById('ciljaniBPMDecimal');
+
 const fpsSelect = document.getElementById('fpsSelect');
 const mjeraTaktaInput = document.getElementById('mjeraTakta');
+// NOVO: Referenca na checkbox
+const exportOnlyMeasureStartsCheckbox = document.getElementById('exportOnlyMeasureStarts');
+
 const ukupnoTrajanjeDatotekeInput = document.getElementById('ukupnoTrajanjeDatotekeInput');
 const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmentaInput');
 const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmentaInput');
 const pragDriftaFrameoviInput = document.getElementById('pragDriftaFrameovi');
 
 const calculateButton = document.getElementById('calculateButton');
-const generateXmlButton = document.getElementById('generateXmlButton'); // Novi gumb za generiranje XML-a (ako postoji, ali koristimo downloadXmlButton)
 const downloadXmlButton = document.getElementById('downloadXmlButton'); // Gumb za preuzimanje XML-a
 
 const inputPage = document.getElementById('input-page');
-const resultsPage = document.getElementById('results-page');
-const markeriOutput = document.getElementById('markeriOutput');
+const markeriOutput = document.getElementById('markeriOutput'); 
 const xmlOutputDiv = document.getElementById('xmlOutput');
-const rezultatDiv = document.getElementById('rezultat'); // VAŽNO: PROVJERI HTML ZA OVAJ ID!
+const rezultatDiv = document.getElementById('rezultat'); 
 
 // --- Event Listeneri ---
 if (ediusXmlFileInput) {
@@ -46,26 +55,95 @@ if (downloadXmlButton) {
     downloadXmlButton.addEventListener('click', generateXmlAndDownload);
 }
 
+// Funkcija za formatiranje cijelog broja BPM-a i prebacivanje fokusa
+function handleIntegerInput(event, nextInputDecimal) {
+    let value = event.target.value.replace(/[^0-9]/g, ''); // Dopusti samo brojeve
+    
+    // Ograniči na 3 znamenke
+    if (value.length > 3) {
+        value = value.substring(0, 3);
+    }
+    event.target.value = value; // Odmah ažuriraj vrijednost u polju
+
+    // Provjeri je li cijeli broj unesen (3 znamenke)
+    if (value.length === 3) { // Ako su tri znamenke unesene, automatski prebaci
+        if (nextInputDecimal) {
+            nextInputDecimal.focus();
+            nextInputDecimal.select();
+        }
+    } else if (event.type === 'blur') { // Prisilno formatiranje na blur (ako je prazno ili nepotpuno)
+        event.target.value = value.padStart(3, '0');
+    }
+}
+
+// Funkcija za formatiranje decimalnog dijela BPM-a i prebacivanje fokusa
+function handleDecimalInput(event, nextInputElement) {
+    let value = event.target.value.replace(/[^0-9]/g, ''); // Dopusti samo brojeve
+
+    // Ograniči na 4 decimale
+    if (value.length > 4) {
+        value = value.substring(0, 4);
+    }
+    event.target.value = value; // Odmah ažuriraj vrijednost u polju
+
+    // Dodaj završne nule ako je unesen cijeli broj decimala (4)
+    if (value.length === 4) {
+        event.target.value = value.padEnd(4, '0'); // Osiguraj 4 decimale
+        if (nextInputElement) {
+            nextInputElement.focus();
+            if (nextInputElement.tagName === 'INPUT' || nextInputElement.tagName === 'SELECT') {
+                nextInputElement.select();
+            }
+        }
+    } else if (event.type === 'blur') { // Prisilno formatiranje na blur (ako je prazno ili nepotpuno)
+        event.target.value = value.padEnd(4, '0');
+    }
+}
+
+
+// Event Listeneri za nova BPM polja
+if (fiksniBPMIntegerInput) {
+    fiksniBPMIntegerInput.addEventListener('input', function(event) {
+        handleIntegerInput(event, fiksniBPMDecimalInput);
+    });
+    fiksniBPMIntegerInput.addEventListener('blur', function(event) {
+        handleIntegerInput(event, fiksniBPMDecimalInput); // Formatiraj na blur
+    });
+}
+if (fiksniBPMDecimalInput) {
+    fiksniBPMDecimalInput.addEventListener('input', function(event) {
+        handleDecimalInput(event, ciljaniBPMIntegerInput);
+    });
+    fiksniBPMDecimalInput.addEventListener('blur', function(event) {
+        handleDecimalInput(event, ciljaniBPMIntegerInput); // Formatiraj na blur
+    });
+}
+
+if (ciljaniBPMIntegerInput) {
+    ciljaniBPMIntegerInput.addEventListener('input', function(event) {
+        handleIntegerInput(event, ciljaniBPMDecimalInput);
+    });
+    ciljaniBPMIntegerInput.addEventListener('blur', function(event) {
+        handleIntegerInput(event, ciljaniBPMDecimalInput); // Formatiraj na blur
+    });
+}
+if (ciljaniBPMDecimalInput) {
+    ciljaniBPMDecimalInput.addEventListener('input', function(event) {
+        handleDecimalInput(event, fpsSelect);
+    });
+    ciljaniBPMDecimalInput.addEventListener('blur', function(event) {
+        handleDecimalInput(event, fpsSelect); // Formatiraj na blur
+    });
+}
+
+
 // Inicijalizacija stanja aplikacije
 function initializeApp() {
     clearXmlData(); // Počistimo sve na početku
-    showPage('input-page'); // Prikazujemo početnu stranicu
-}
 
-// Funkcija za prebacivanje između stranica
-function showPage(pageId) {
-    if (inputPage) inputPage.classList.remove('active');
-    if (resultsPage) resultsPage.classList.remove('active');
-
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-        targetPage.classList.add('active');
-        // Skrivanje/prikaz gumba za preuzimanje XML-a ovisno o stranici
-        if (pageId === 'results-page') {
-            if (downloadXmlButton) downloadXmlButton.style.display = 'block';
-        } else {
-            if (downloadXmlButton) downloadXmlButton.style.display = 'none';
-        }
+    // POSTAVI FOKUS NA GUMB ZA UČITAVANJE DATOTEKE PRI POKRETANJU
+    if (ediusXmlFileInput) {
+        ediusXmlFileInput.focus();
     }
 }
 
@@ -81,22 +159,33 @@ function handleXmlFileSelect(event) {
                 // Ako je rezultatDiv pronađen, postavi status poruku
                 if (xmlStatus) {
                     xmlStatus.textContent = `Učitano: ${file.name}`;
-                    xmlStatus.style.display = 'block';
+                    xmlStatus.style.display = 'inline-block'; // Promijenjeno u inline-block da bude uz gumb
+                    xmlStatus.style.color = 'green'; // Postavi boju na zelenu
                 }
                 if (clearXmlButton) {
                     clearXmlButton.style.display = 'inline-block';
                 }
                 console.log("EDIUS XML datoteka uspješno pročitana.");
+                // Ovdje NE AŽURIRAMO rezultatDiv s porukom o uspješnom učitavanju,
+                // jer xmlStatus već to prikazuje.
                 if (rezultatDiv) {
-                    rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Sada možete izračunati markere.';
-                    rezultatDiv.style.color = 'green';
+                    rezultatDiv.textContent = ''; // Očisti poruku u rezultatDiv
+                    rezultatDiv.style.color = ''; // Resetiraj boju
+                }
+
+
+                // NAKON USPJEŠNOG UČITAVANJA XML-A, PREBACI FOKUS NA FIKSNI BPM INTEGER INPUT
+                if (fiksniBPMIntegerInput) {
+                    fiksniBPMIntegerInput.focus();
+                    fiksniBPMIntegerInput.select(); // Selektiraj tekst u prvom BPM polju
                 }
 
             } catch (error) {
                 console.error("Greška pri parsiranju XML datoteke:", error);
                 if (xmlStatus) {
                     xmlStatus.textContent = `Greška pri učitavanju: ${error.message}`;
-                    xmlStatus.style.display = 'block';
+                    xmlStatus.style.display = 'inline-block';
+                    xmlStatus.style.color = 'red'; // Greška crvenom bojom
                 }
                 if (clearXmlButton) {
                     clearXmlButton.style.display = 'inline-block';
@@ -104,6 +193,10 @@ function handleXmlFileSelect(event) {
                 if (rezultatDiv) {
                     rezultatDiv.textContent = `Greška pri parsiranju XML-a: ${error.message}`;
                     rezultatDiv.style.color = 'red';
+                }
+                // U slučaju greške, vrati fokus na gumb za učitavanje datoteke
+                if (ediusXmlFileInput) {
+                    ediusXmlFileInput.focus();
                 }
             }
         };
@@ -119,27 +212,51 @@ function clearXmlData() {
     musicEndTC = null;
     fileStartTC = null;
     fileEndTC = null;
+    autoMusicStartTC = null; 
+    autoMusicEndTC = null;   
+    midSegmentTC = null; // Resetiramo središnji timecode
     calculatedBeatMarkers = [];
 
     if (ediusXmlFileInput) ediusXmlFileInput.value = ''; // Resetiraj file input
-    if (pocetakGlazbenogSegmentaInput) pocetakGlazbenogSegmentaInput.value = '';
-    if (krajGlazbenogSegmentaInput) krajGlazbenogSegmentaInput.value = '';
-    if (xmlStatus) xmlStatus.style.display = 'none';
-    if (clearXmlButton) clearXmlButton.style.display = 'none';
-    if (rezultatDiv) rezultatDiv.textContent = ''; // Provjera postojanja
-    if (markeriOutput) markeriOutput.innerHTML = '';
-    if (xmlOutputDiv) xmlOutputDiv.innerHTML = '';
-    if (downloadXmlButton) downloadXmlButton.style.display = 'none';
+    if (pocetakGlazbenogSegmentaInput) pocetakGlazbenogSegmentaInput.textContent = '';
+    if (krajGlazbenogSegmentaInput) krajGlazbenogSegmentaInput.textContent = '';
+    if (ukupnoTrajanjeDatotekeInput) ukupnoTrajanjeDatotekeInput.textContent = '';
 
-    // Postavi defaultne vrijednosti (ako želiš da se inputi vrate na nešto)
-    if (fiksniBPMInput) fiksniBPMInput.value = "120.0000";
-    if (ciljaniBPMInput) ciljaniBPMInput.value = "128.0000";
+    if (xmlStatus) {
+        xmlStatus.style.display = 'none';
+        xmlStatus.style.color = ''; // Resetiraj boju
+    }
+    if (clearXmlButton) clearXmlButton.style.display = 'none';
+    if (rezultatDiv) {
+        rezultatDiv.textContent = ''; 
+        rezultatDiv.style.color = ''; // Resetiraj boju
+    }
+    if (markeriOutput) markeriOutput.innerHTML = '';
+    if (xmlOutputDiv) { 
+        xmlOutputDiv.innerHTML = '';
+        xmlOutputDiv.style.display = 'none'; // SAKRIJ xmlOutputDiv
+    }
+    if (downloadXmlButton) downloadXmlButton.style.display = 'none'; // SAKRIJ gumb za preuzimanje
+
+    // Postavi defaultne vrijednosti za nova BPM polja
+    if (fiksniBPMIntegerInput) fiksniBPMIntegerInput.value = "120";
+    if (fiksniBPMDecimalInput) fiksniBPMDecimalInput.value = "0000";
+    if (ciljaniBPMIntegerInput) ciljaniBPMIntegerInput.value = "128";
+    if (ciljaniBPMDecimalInput) ciljaniBPMDecimalInput.value = "0000";
+    
     if (fpsSelect) fpsSelect.value = "25";
     if (mjeraTaktaInput) mjeraTaktaInput.value = "4";
-    if (ukupnoTrajanjeDatotekeInput) ukupnoTrajanjeDatotekeInput.value = "00:05:00:00";
+    // NOVO: Resetiraj checkbox na unchecked
+    if (exportOnlyMeasureStartsCheckbox) exportOnlyMeasureStartsCheckbox.checked = false;
+
+    // Postavljanje defaultne vrijednosti za ukupno trajanje na <p> elementu
+    if (ukupnoTrajanjeDatotekeInput) ukupnoTrajanjeDatotekeInput.textContent = "00:05:00:00"; 
     if (pragDriftaFrameoviInput) pragDriftaFrameoviInput.value = "1";
 
-    showPage('input-page'); // Vrati se na početnu stranicu
+    // NAKON ČIŠĆENJA, VRATI FOKUS NA GUMB ZA UČITAVANJE DATOTEKE
+    if (ediusXmlFileInput) {
+        ediusXmlFileInput.focus();
+    }
 }
 
 
@@ -173,10 +290,13 @@ function parseEdiusXmlFile(xmlString) {
 
     console.log("Pronađeni markeri (Snapshot) (parseEdiusXmlFile):", markers.snapshotLength);
 
-    if (markers.snapshotLength === 0) {
-        console.warn("Nema markera pronađenih u XML datoteci.");
-        if (rezultatDiv) rezultatDiv.textContent = 'Upozorenje: Nema markera pronađenih u XML datoteci.';
-        return;
+    if (markers.snapshotLength < 2) { // Minimalno 2 markera za početak i kraj glazbe
+        console.warn("Manje od 2 markera pronađeno u XML datoteci. Ne mogu automatski postaviti 'glazba_pocetak' i 'glazba_kraj'.");
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Upozorenje: Nema dovoljno markera (min. 2) za automatsko postavljanje "glazba_pocetak" i "glazba_kraj".';
+            rezultatDiv.style.color = 'orange';
+        }
+        // I dalje nastavljamo s parsiranjem ako ima bar jedan marker, ali bez auto-oznake
     }
 
     // Resetiranje globalnih varijabli prije popunjavanja
@@ -184,8 +304,11 @@ function parseEdiusXmlFile(xmlString) {
     musicEndTC = null;
     fileStartTC = null;
     fileEndTC = null;
+    autoMusicStartTC = null;
+    autoMusicEndTC = null;
+    midSegmentTC = null; // reset
 
-    // Dohvaćanje prvog i zadnjeg markera
+    // Dohvaćanje prvog, drugog, predzadnjeg i zadnjeg markera
     if (markers.snapshotLength > 0) {
         const firstMarker = markers.snapshotItem(0);
         const lastMarker = markers.snapshotItem(markers.snapshotLength - 1);
@@ -210,16 +333,40 @@ function parseEdiusXmlFile(xmlString) {
             fileEndTC = lastMarkerPosNode.textContent.trim();
             console.log("Pronađen zadnji marker (fileEndTC):", fileEndTC);
         }
+
+        // POSTAVLJANJE AUTOMATSKIH GLAZBENIH MARKERA
+        if (markers.snapshotLength >= 2) {
+            const secondMarker = markers.snapshotItem(1); // Drugi marker (indeks 1)
+            const secondMarkerPosNode = xmlDoc.evaluate('edius:position', secondMarker, (prefix) => {
+                if (prefix === 'edius') return EDIUS_XML_NAMESPACE_URI;
+                return null;
+            }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            if (secondMarkerPosNode) {
+                autoMusicStartTC = secondMarkerPosNode.textContent.trim();
+                console.log("Automatski postavljen autoMusicStartTC (drugi marker):", autoMusicStartTC);
+            }
+        }
+        
+        if (markers.snapshotLength >= 2) {
+            // Predzadnji marker (indeks: ukupno - 2)
+            const penultimateMarker = markers.snapshotItem(markers.snapshotLength - 2); 
+            const penultimateMarkerPosNode = xmlDoc.evaluate('edius:position', penultimateMarker, (prefix) => {
+                if (prefix === 'edius') return EDIUS_XML_NAMESPACE_URI;
+                return null;
+            }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            if (penultimateMarkerPosNode) {
+                autoMusicEndTC = penultimateMarkerPosNode.textContent.trim();
+                console.log("Automatski postavljen autoMusicEndTC (predzadnji marker):", autoMusicEndTC);
+            }
+        }
     }
 
+
     // Iteriranje kroz markere za pronalaženje 'glazba_pocetak' i 'glazba_kraj'
+    // I dalje tražimo ako su ručno dodani (za premošćivanje automatskih)
     for (let i = 0; i < markers.snapshotLength; i++) {
         const marker = markers.snapshotItem(i);
 
-        // DEBUG LINIJE - POMOĆ PRI DIJAGNOSTICI
-        console.log(`Debug: Trenutni marker DOM element (${i+1}):`, marker);
-
-        // Korištenje XPatha za dohvaćanje unutar markera
         const commentNode = xmlDoc.evaluate('edius:comment', marker, (prefix) => {
             if (prefix === 'edius') return EDIUS_XML_NAMESPACE_URI;
             return null;
@@ -230,51 +377,43 @@ function parseEdiusXmlFile(xmlString) {
             return null;
         }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
-        // DEBUG LINIJE - POMOĆ PRI DIJAGNOSTICI
-        console.log(`Debug: commentNode za marker ${i+1}:`, commentNode);
-        console.log(`Debug: positionNode za marker ${i+1}:`, positionNode);
-
 
         if (commentNode && positionNode) {
             const comment = commentNode.textContent.trim();
             const position = positionNode.textContent.trim();
 
-            console.log(`--- Marker ${i + 1} ---`);
-            console.log(" Sadržaj komentara:", JSON.stringify(comment));
-            console.log(" Sadržaj pozicije:", JSON.stringify(position));
-
             if (comment === 'glazba_pocetak') {
-                musicStartTC = position;
-                console.log("!!! Postavljen musicStartTC na:", musicStartTC);
+                musicStartTC = position; // Ručno dodani ima prednost
+                console.log("!!! Ručno postavljen musicStartTC na:", musicStartTC);
             } else if (comment === 'glazba_kraj') {
-                musicEndTC = position;
-                console.log("!!! Postavljen musicEndTC na:", musicEndTC);
+                musicEndTC = position; // Ručno dodani ima prednost
+                console.log("!!! Ručno postavljen musicEndTC na:", musicEndTC);
             }
-        } else {
-            console.warn(`Marker ${i + 1} nema element za komentar ili poziciju. Provjeri XML strukturu ili URI namespace-a.`);
         }
     }
 
     // Ažuriranje input polja na temelju parsiranih vrijednosti
+    // Prioritet: ručno dodani markeri iz XML-a, pa onda automatski generirani.
     if (pocetakGlazbenogSegmentaInput) {
-        pocetakGlazbenogSegmentaInput.value = musicStartTC || '';
+        pocetakGlazbenogSegmentaInput.textContent = musicStartTC || autoMusicStartTC || '';
     }
     if (krajGlazbenogSegmentaInput) {
-        krajGlazbenogSegmentaInput.value = musicEndTC || '';
+        krajGlazbenogSegmentaInput.textContent = musicEndTC || autoMusicEndTC || '';
     }
     if (ukupnoTrajanjeDatotekeInput) {
         // Ako postoji fileEndTC iz Edius XML-a, popuni trajanje datoteke
-        ukupnoTrajanjeDatotekeInput.value = fileEndTC || '';
+        ukupnoTrajanjeDatotekeInput.textContent = fileEndTC || '';
     }
 
-    if (musicStartTC && musicEndTC) {
+    // Provjera jesu li markeri za glazbu uspješno postavljeni
+    if ((musicStartTC || autoMusicStartTC) && (musicEndTC || autoMusicEndTC)) {
         if (rezultatDiv) {
-            rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja. Sada možete kliknuti "Izračunaj Markere".';
-            rezultatDiv.style.color = 'green';
+            rezultatDiv.textContent = ''; // Očisti rezultatDiv jer je status u xmlStatus
+            rezultatDiv.style.color = '';
         }
     } else {
         if (rezultatDiv) {
-            rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u. Unesite ih ručno ili provjerite XML.';
+            rezultatDiv.textContent = 'Upozorenje: Nisu pronađeni "glazba_pocetak" i "glazba_kraj" markeri (ili nije dovoljno markera za automatsko prepoznavanje). Provjerite XML ili ih ručno dodajte.';
             rezultatDiv.style.color = 'orange';
         }
     }
@@ -320,20 +459,28 @@ function framesToTimecode(totalFrames, fps) {
  */
 function calculateMarkersAndShowResults() {
     const fps = parseFloat(fpsSelect.value);
-    const fiksniBPM = parseFloat(fiksniBPMInput.value);
-    const ciljaniBPM = parseFloat(ciljaniBPMInput.value);
+    
+    // Dohvaćanje i spajanje BPM vrijednosti iz odvojenih polja
+    const fiksniBPMInteger = fiksniBPMIntegerInput.value.padStart(3, '0');
+    const fiksniBPMDecimal = fiksniBPMDecimalInput.value.padEnd(4, '0');
+    const fiksniBPM = parseFloat(`${fiksniBPMInteger}.${fiksniBPMDecimal}`);
+
+    const ciljaniBPMInteger = ciljaniBPMIntegerInput.value.padStart(3, '0');
+    const ciljaniBPMDecimal = ciljaniBPMDecimalInput.value.padEnd(4, '0');
+    const ciljaniBPM = parseFloat(`${ciljaniBPMInteger}.${ciljaniBPMDecimal}`);
+
     const mjeraTakta = parseInt(mjeraTaktaInput.value, 10);
     const pragDriftaFrameovi = parseInt(pragDriftaFrameoviInput.value, 10);
 
     // Dodane provjere postojanja elementa prije pristupa value/textContent
-    if (!fiksniBPMInput || isNaN(fiksniBPM) || fiksniBPM <= 0) {
+    if (isNaN(fiksniBPM) || fiksniBPM <= 0) {
         if (rezultatDiv) {
             rezultatDiv.textContent = 'Greška: Unesite ispravan Fiksni BPM (veći od 0).';
             rezultatDiv.style.color = 'red';
         }
         return;
     }
-    if (!ciljaniBPMInput || isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
+    if (isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
         if (rezultatDiv) {
             rezultatDiv.textContent = 'Greška: Unesite ispravan Ciljani BPM (veći od 0).';
             rezultatDiv.style.color = 'red';
@@ -362,12 +509,13 @@ function calculateMarkersAndShowResults() {
         return;
     }
 
-    const pocetakSegmenta = pocetakGlazbenogSegmentaInput.value;
-    const krajSegmenta = krajGlazbenogSegmentaInput.value;
+    // Promijenjeno: Čitanje timecodeova iz textContenta <p> elemenata
+    const pocetakSegmenta = pocetakGlazbenogSegmentaInput.textContent;
+    const krajSegmenta = krajGlazbenogSegmentaInput.textContent;
 
     if (!pocetakSegmenta || !krajSegmenta) {
         if (rezultatDiv) {
-            rezultatDiv.textContent = 'Greška: Molimo unesite početni i krajnji timecode glazbenog segmenta (ili učitajte XML).';
+            rezultatDiv.textContent = 'Greška: Početni i krajnji timecode glazbenog segmenta nisu pronađeni. Učitajte XML datoteku ili osigurajte da postoje barem 2 markera za automatsko prepoznavanje.';
             rezultatDiv.style.color = 'red';
         }
         return;
@@ -401,7 +549,7 @@ function calculateMarkersAndShowResults() {
         console.log(`FPS: ${fps}`);
         console.log(`Fiksni BPM: ${fiksniBPM}`);
         console.log(`Ciljani BPM: ${ciljaniBPM}`);
-        console.log(`Izračunati varijabilni BPM (drift): ${varijabilniBPM.toFixed(4)}`); // Preciznost za varijabilni BPM
+        console.log(`Izračunati varijabilni BPM (drift): ${varijabilniBPM.toFixed(4)}`);
         console.log(`Frames po beatu (početni): ${initialBpmFramesPerBeat.toFixed(2)}`);
         console.log(`Frames po beatu (krajnji): ${finalBpmFramesPerBeat.toFixed(2)}`);
 
@@ -409,7 +557,7 @@ function calculateMarkersAndShowResults() {
         calculatedBeatMarkers = []; // Resetiraj globalnu listu markera
         let currentBeatFrame = startFrames;
         let beatIndex = 0;
-        let markerDisplayHtml = '<h3>Izračunati Beat Markeri:</h3><ul>';
+        let markerDisplayHtml = '<h3>Izračunati Beat Markeri:</h3><ul>'; 
 
         while (currentBeatFrame <= endFrames) {
             const beatTimecode = framesToTimecode(Math.round(currentBeatFrame), fps);
@@ -417,10 +565,10 @@ function calculateMarkersAndShowResults() {
 
             calculatedBeatMarkers.push({
                 timecode: beatTimecode,
-                comment: comment
+                comment: comment,
+                beatIndex: beatIndex // Dodaj beatIndex za kasnije filtriranje
             });
-            markerDisplayHtml += `<li>${comment}: ${beatTimecode}</li>`;
-
+            
             // Izračunavanje interpoliranog framesPerBeat za sljedeći takt
             const progress = (currentBeatFrame - startFrames) / durationFrames;
             const interpolatedFramesPerBeat = initialBpmFramesPerBeat + (finalBpmFramesPerBeat - initialBpmFramesPerBeat) * progress;
@@ -428,10 +576,14 @@ function calculateMarkersAndShowResults() {
             currentBeatFrame += interpolatedFramesPerBeat;
             beatIndex++;
         }
-        markerDisplayHtml += '</ul>';
-        if (markeriOutput) markeriOutput.innerHTML = markerDisplayHtml; // Provjera postojanja
-
+       
         console.log("Izračunati beat markeri:", calculatedBeatMarkers);
+
+        // Izračunaj središnji timecode segmenta
+        const midFrames = startFrames + Math.round(durationFrames / 2);
+        midSegmentTC = framesToTimecode(midFrames, fps);
+        console.log("Središnji timecode segmenta (midSegmentTC):", midSegmentTC);
+
 
         // Prikaz upozorenja o driftu ako je varijabilniBPM veći od 0 ili manji od 0
         if (rezultatDiv) {
@@ -444,7 +596,9 @@ function calculateMarkersAndShowResults() {
             }
         }
 
-        showPage('results-page'); // Prelazak na stranicu s rezultatima
+        // Prikaži gumb za preuzimanje i izlaznu poruku
+        if (downloadXmlButton) downloadXmlButton.style.display = 'inline-block';
+        if (xmlOutputDiv) xmlOutputDiv.style.display = 'block'; 
 
     } catch (error) {
         console.error("Greška pri izračunu markera:", error);
@@ -467,7 +621,7 @@ function generateXmlAndDownload() {
     try {
         // Poziv funkcije za generiranje Edius-kompatibilnog XML-a
         // Ova funkcija će vratiti string s UTF-16 deklaracijom i CRLF prekidima
-        const xmlContent = generateEdiusCompatibleXml(calculatedBeatMarkers, musicStartTC, musicEndTC);
+        const xmlContent = generateEdiusCompatibleXml(calculatedBeatMarkers); // musicStartTC i musicEndTC se sada uzimaju globalno
 
         // --- KLJUČNE LINIJE ZA RUČNU UTF-16 LE KONVERZIJU ---
 
@@ -514,8 +668,8 @@ function generateXmlAndDownload() {
 // --- Pomoćna funkcija za formatiranje datuma u Edius formatu ---
 function getFormattedEdiusDate() {
     const now = new Date();
-    const days = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub']; // Promijenjeno na hrvatske nazive
-    const months = ['Sij', 'Velj', 'Ožu', 'Tra', 'Svi', 'Lip', 'Srp', 'Kol', 'Ruj', 'Lis', 'Stu', 'Pro']; // Promijenjeno na hrvatske nazive
+    const days = ['Ned', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub'];
+    const months = ['Sij', 'Velj', 'Ožu', 'Tra', 'Svi', 'Lip', 'Srp', 'Kol', 'Ruj', 'Lis', 'Stu', 'Pro'];
 
     const dayName = days[now.getDay()];
     const monthName = months[now.getMonth()];
@@ -529,76 +683,135 @@ function getFormattedEdiusDate() {
 }
 
 // --- Funkcija za generiranje Edius-kompatibilnog XML-a ---
-function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
+// Ova funkcija sada koristi globalne musicStartTC i musicEndTC varijable
+// koje su popunjene ili ručno ili automatski.
+function generateEdiusCompatibleXml(beatMarkers) {
     const XML_NAMESPACE_URI = 'http://www.grassvalley.com/ns/edius/markerListInfo'; // Ovo je ključno! Mora biti točno kao u Edius XML-u.
 
-    // IZMIJENJENA LINIJA: Prvi argument je sada ispravan namespace URI
     const doc = document.implementation.createDocument(XML_NAMESPACE_URI, 'edius:markerInfo', null);
     const root = doc.documentElement;
 
-    // Ova linija je sada donekle redundantna, ali je sigurno ostaviti je
     root.setAttribute('xmlns:edius', XML_NAMESPACE_URI);
 
-    const formatVersion = doc.createElementNS(XML_NAMESPACE_URI, 'edius:formatVersion'); // Koristi createElementNS
+    const formatVersion = doc.createElementNS(XML_NAMESPACE_URI, 'edius:formatVersion');
     formatVersion.textContent = '4';
     root.appendChild(formatVersion);
 
-    const createDate = doc.createElementNS(XML_NAMESPACE_URI, 'edius:CreateDate'); // Koristi createElementNS
+    const createDate = doc.createElementNS(XML_NAMESPACE_URI, 'edius:CreateDate');
     createDate.textContent = getFormattedEdiusDate();
     root.appendChild(createDate);
 
-    const markerLists = doc.createElementNS(XML_NAMESPACE_URI, 'edius:markerLists'); // Koristi createElementNS
+    const markerLists = doc.createElementNS(XML_NAMESPACE_URI, 'edius:markerLists');
     root.appendChild(markerLists);
 
     let markerNoCounter = 1;
 
-    // Dodaje početni marker na 00:00:00:00 ako je pronađen u ulaznom XML-u (fileStartTC)
-    const initialMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
-    // Koristi fileStartTC iz parsiranog XML-a, ili default '00:00:00:00'
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = fileStartTC || '00:00:00:00';
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = '';
-    initialMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
-    markerLists.appendChild(initialMarker);
+    // Uzimamo aktualne početne i krajnje TC-eve za glazbeni segment
+    const actualMusicStartTC = musicStartTC || autoMusicStartTC;
+    const actualMusicEndTC = musicEndTC || autoMusicEndTC;
 
-    // Dodaje 'glazba_pocetak' marker ako je dostupan i nije isti kao početni marker (00:00:00:00)
-    // Važno: Provjeravamo da li se musicStartTC razlikuje od initialMarkera da ne bi duplicirali 00:00:00:00
-    if (musicStartTC && musicStartTC !== (fileStartTC || '00:00:00:00')) {
+    // Dohvati stanje checkboxa
+    const shouldExportOnlyMeasureStarts = exportOnlyMeasureStartsCheckbox.checked;
+    const mjeraTakta = parseInt(mjeraTaktaInput.value, 10); // Dohvati mjeru takta
+
+    // 1. Dodaje prvi marker iz originalne datoteke (ili 00:00:00:00 ako nije pronađen)
+    const initialFileMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = fileStartTC || '00:00:00:00';
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = 'File Start'; 
+    initialFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
+    markerLists.appendChild(initialFileMarker);
+
+    // 2. Dodaje 'glazba_pocetak' marker (ako već nije dodan kao File Start)
+    if (actualMusicStartTC && actualMusicStartTC !== (fileStartTC || '00:00:00:00')) {
         const startMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
         startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
         startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
-        startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = musicStartTC;
+        startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = actualMusicStartTC;
         startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
         startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = 'glazba_pocetak';
         startMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
         markerLists.appendChild(startMarker);
+    } else if (actualMusicStartTC && actualMusicStartTC === (fileStartTC || '00:00:00:00')) {
+        // Ažuriraj komentar prvog markera ako je glazba_pocetak na istom mjestu kao i početak datoteke
+        initialFileMarker.querySelector('edius:comment').textContent = 'glazba_pocetak / File Start';
     }
 
-    // Dodaje sve izračunate beat markere
+
+    // 3. Dodaje "Sredina Drifta" marker
+    // Provjeravamo da li središnji marker postoji i da nije isti kao početni ili krajnji.
+    if (midSegmentTC && midSegmentTC !== actualMusicStartTC && midSegmentTC !== actualMusicEndTC) {
+        const midMarker1 = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = midSegmentTC;
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = 'Sredina Drifta';
+        midMarker1.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
+        markerLists.appendChild(midMarker1);
+    }
+
+
+    // 4. Dodaje sve izračunate beat markere
+    // Filtriramo markere na temelju checkboxa i da ne dodamo duplikate
     beatMarkers.forEach((marker) => {
-        const beatMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = marker.timecode;
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = marker.comment;
-        beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
-        markerLists.appendChild(beatMarker);
+        // Provjeri treba li exportirati samo početke taktova
+        const isMeasureStart = (marker.beatIndex % mjeraTakta === 0);
+
+        if (shouldExportOnlyMeasureStarts && !isMeasureStart) {
+            return; // Preskoči ako želimo samo početke taktova, a ovo nije početak takta
+        }
+
+        // Uvijek preskoči duplikate s fiksnim markerima
+        if (marker.timecode !== actualMusicStartTC && marker.timecode !== actualMusicEndTC && marker.timecode !== midSegmentTC) {
+            const beatMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = marker.timecode;
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = marker.comment;
+            beatMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
+            markerLists.appendChild(beatMarker);
+        }
     });
 
-    // Dodaje 'glazba_kraj' marker ako je dostupan
-    if (musicEndTC) {
+    // 5. Dodaje 'glazba_kraj' marker (ako već nije dodan kao zadnji marker datoteke)
+    if (actualMusicEndTC && actualMusicEndTC !== fileEndTC) {
         const endMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
         endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
         endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
-        endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = musicEndTC;
+        endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = actualMusicEndTC;
         endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
         endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = 'glazba_kraj';
         endMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
         markerLists.appendChild(endMarker);
+    } else if (actualMusicEndTC && actualMusicEndTC === fileEndTC) {
+        // Ažuriraj komentar zadnjeg markera ako je glazba_kraj na istom mjestu kao i kraj datoteke
+        // Ovo pretpostavlja da je fileEndTC već dodan.
+        const lastMarkerInList = markerLists.lastChild; // Dohvaća zadnje dodani marker
+        if (lastMarkerInList && lastMarkerInList.querySelector('edius:position').textContent === fileEndTC) {
+             const commentNode = lastMarkerInList.querySelector('edius:comment');
+             if (commentNode.textContent.includes('File End')) { // Provjeri je li to zadnji marker datoteke
+                 commentNode.textContent = 'glazba_kraj / File End';
+             }
+        }
     }
+    
+    // 6. Dodaje zadnji marker iz originalne datoteke (ako nije već 'glazba_kraj')
+    // Ovaj marker treba biti zadnji u listi, osim ako je glazba_kraj već na toj poziciji
+    if (fileEndTC && fileEndTC !== actualMusicEndTC) {
+        const finalFileMarker = doc.createElementNS(XML_NAMESPACE_URI, 'edius:marker');
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:no')).textContent = markerNoCounter++;
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:anchor')).textContent = '1';
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:position')).textContent = fileEndTC;
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:duration')).textContent = '--:--:--:--';
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:comment')).textContent = 'File End'; 
+        finalFileMarker.appendChild(doc.createElementNS(XML_NAMESPACE_URI, 'edius:color')).textContent = '0xffffffff';
+        markerLists.appendChild(finalFileMarker);
+    }
+
 
     const serializer = new XMLSerializer();
     let xmlString = serializer.serializeToString(doc);

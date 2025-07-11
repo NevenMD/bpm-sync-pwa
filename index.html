@@ -3,94 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BPM Sync Helper</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Varijabilni BPM Kalkulator za EDIUS Markere</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input[type="text"],
+        .input-group input[type="number"],
+        .input-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100%; /* Podesi širinu input polja */
+            box-sizing: border-box; /* Važno za padding i border */
+        }
+        .input-group p {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #e9e9e9;
+            margin: 0;
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace; /* Fiksna širina fonta za timecode */
+            color: #555;
+        }
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Razmak između inputa i gumba */
+            margin-bottom: 15px;
+        }
+        .file-input-wrapper input[type="file"] {
+            flex-grow: 1; /* Omogući da input zauzme raspoloživi prostor */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .file-input-wrapper .button {
+            white-space: nowrap; /* Spriječi prelamanje teksta gumba */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            width: auto; /* Automatska širina */
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status-message {
+            margin-left: 10px;
+            font-style: italic;
+            display: none; /* Sakrij po defaultu */
+        }
+        #rezultat {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            color: #004085;
+            font-weight: bold;
+            text-align: center;
+        }
+        #xmlOutput {
+            margin-top: 20px;
+            background-color: #e9e9e9;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap; /* Omogućuje prelamanje teksta unutar diva */
+            word-wrap: break-word; /* Osigurava da dugačke riječi ne prelijevaju */
+            max-height: 400px; /* Maksimalna visina za scroll */
+            overflow-y: auto; /* Omogući scroll ako je sadržaj prevelik */
+            border: 1px solid #ccc;
+            display: none; /* Sakrij po defaultu */
+        }
+        .bpm-input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px; /* Manji razmak između polja */
+        }
+        .bpm-input-group input[type="text"] {
+            width: calc(50% - 2.5px); /* Pola širine minus pola razmaka */
+        }
+        .bpm-input-group span {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .decimal-label {
+            font-weight: normal !important; /* Decimal label ne treba biti bold */
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 5px;
+        }
+        /* Style for the new checkbox group */
+        .checkbox-group {
+            flex-direction: row; /* Keep checkbox and label on the same line */
+            align-items: center; /* Vertically align them */
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto; /* Default width for checkbox */
+            margin-right: 8px; /* Space between checkbox and label */
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0; /* No bottom margin for label */
+            font-weight: normal; /* Make label text normal weight */
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>BPM Sync Helper</h1>
-
-        <div id="input-page" class="page active">
-            <div class="input-group">
-                <label for="ediusXmlFile">Učitaj Edius XML s referentnim markerima:</label>
+        <h1>Varijabilni BPM Kalkulator za EDIUS Markere</h1>
+        
+        <div class="input-group">
+            <label for="ediusXmlFile">1. Učitajte postojeći EDIUS XML s markerima:</label>
+            <div class="file-input-wrapper">
                 <input type="file" id="ediusXmlFile" accept=".xml">
-                <button id="clearXmlButton" style="display:none;">Poništi učitani XML</button>
-                <p id="xmlStatus" class="info-message" style="display:none;"></p>
-            </div>
-
-            <div class="input-group">
-                <label for="fiksniBPM">Fiksni (izmjereni) BPM glazbe:</label>
-                <input type="number" id="fiksniBPM" step="0.0001" placeholder="Npr. 120.0000" min="0.001" value="120.0000">
-            </div>
-            <div class="input-group">
-                <label for="ciljaniBPM">Ciljani BPM videa:</label>
-                <input type="number" id="ciljaniBPM" step="0.0001" placeholder="Npr. 128.0000" min="0.001" value="128.0000">
-            </div>
-
-            <div class="input-group">
-                <label for="fpsSelect">FPS projekta:</label>
-                <select id="fpsSelect">
-                    <option value="23.976">23.976 (24p)</option>
-                    <option value="24">24</option>
-                    <option value="25" selected>25 (PAL)</option>
-                    <option value="29.97">29.97 (NTSC)</option>
-                    <option value="30">30</option>
-                    <option value="47.952">47.952</option>
-                    <option value="48">48</option>
-                    <option value="50">50</option>
-                    <option value="59.94">59.94</option>
-                    <option value="60">60</option>
-                </select>
-                <span class="help-text" id="fpsHelpText"></span>
-            </div>
-
-            <div class="input-group">
-                <label for="mjeraTakta">Mjera takta (koliko udaraca u taktu, npr. 4/4 = 4):</label>
-                <input type="number" id="mjeraTakta" value="4" min="1">
-            </div>
-
-            <div class="timecode-section">
-                <h3>Ručni unos Timecodeova (automatski se popunjava iz XML-a)</h3>
-                <p class="info-message" id="manualInputMessage">Unesite timecodeove ili učitajte XML datoteku.</p>
-
-                <div class="timecode-input" id="timecode-cijela">
-                    <h4>Ukupno trajanje fizičke datoteke:</h4>
-                    <input type="text" id="ukupnoTrajanjeDatotekeInput" placeholder="HH:MM:SS:FF" value="00:05:00:00" class="timecode-combined-input">
-                </div>
-
-                <div class="timecode-input" id="timecode-pocetak-segmenta">
-                    <h4>Timecode početka glazbenog segmenta:</h4>
-                    <input type="text" id="pocetakGlazbenogSegmentaInput" placeholder="HH:MM:SS:FF" value="00:00:00:00" class="timecode-combined-input">
-                </div>
-
-                <div class="timecode-input" id="timecode-kraj-segmenta">
-                    <h4>Timecode kraja glazbenog segmenta:</h4>
-                    <input type="text" id="krajGlazbenogSegmentaInput" placeholder="HH:MM:SS:FF" value="00:04:59:00" class="timecode-combined-input">
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="pragDriftaFrameovi">Prag drifta (u frameovima) za generiranje markera:</label>
-                <input type="number" id="pragDriftaFrameovi" value="1" min="0">
-            </div>
-
-            <p id="rezultat" class="info-message"></p> 
-
-            <button id="calculateButton">Izračunaj Markere</button>
-        </div>
-
-        <div id="results-page" class="page">
-            <h2>Rezultati proračuna</h2>
-            <div id="markeriOutput" class="output-section">
-            </div>
-            <button id="generateXmlButton" style="display:none;">Generiraj XML</button>
-            <button id="downloadXmlButton" style="display:none;">Preuzmi XML</button>
-            <div id="xmlOutput" class="output-section xml-output">
+                <button type="button" id="clearXmlButton" style="display: none;">Poništi XML</button>
+                <span id="xmlStatus" class="status-message"></span>
             </div>
         </div>
+
+        <div class="input-group">
+            <label>2. Početni timecode glazbenog segmenta (iz Edius XML-a):</label>
+            <p id="pocetakGlazbenogSegmentaInput">Učitajte XML</p>
+        </div>
+
+        <div class="input-group">
+            <label>3. Krajnji timecode glazbenog segmenta (iz Edius XML-a):</label>
+            <p id="krajGlazbenogSegmentaInput">Učitajte XML</p>
+        </div>
+
+        <div class="input-group">
+            <label>Ukupno trajanje datoteke (iz Edius XML-a):</label>
+            <p id="ukupnoTrajanjeDatotekeInput">Učitajte XML</p>
+        </div>
+
+        <div class="input-group">
+            <label for="fiksniBPMInteger">4. Fiksni BPM (početni):</label>
+            <div class="bpm-input-group">
+                <input type="text" id="fiksniBPMInteger" value="120" maxlength="3" pattern="\d{3}" placeholder="120" inputmode="numeric">
+                <span>.</span>
+                <input type="text" id="fiksniBPMDecimal" value="0000" maxlength="4" pattern="\d{4}" placeholder="0000" inputmode="numeric">
+                <span class="decimal-label">(npr. 120.0000)</span>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="ciljaniBPMInteger">5. Ciljani BPM (krajnji):</label>
+            <div class="bpm-input-group">
+                <input type="text" id="ciljaniBPMInteger" value="128" maxlength="3" pattern="\d{3}" placeholder="128" inputmode="numeric">
+                <span>.</span>
+                <input type="text" id="ciljaniBPMDecimal" value="0000" maxlength="4" pattern="\d{4}" placeholder="0000" inputmode="numeric">
+                <span class="decimal-label">(npr. 128.0000)</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="fpsSelect">6. FPS (Frame Rate):</label>
+            <select id="fpsSelect">
+                <option value="23.976">23.976</option>
+                <option value="24">24</option>
+                <option value="25" selected>25</option>
+                <option value="29.97">29.97</option>
+                <option value="30">30</option>
+                <option value="50">50</option>
+                <option value="59.94">59.94</option>
+                <option value="60">60</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label for="mjeraTakta">7. Mjera takta (npr. 4 za 4/4):</label>
+            <input type="number" id="mjeraTakta" value="4" min="1" step="1">
+        </div>
+
+        <div class="input-group checkbox-group">
+            <input type="checkbox" id="exportOnlyMeasureStarts">
+            <label for="exportOnlyMeasureStarts">Exportiraj samo početke taktova (npr. Beat 0, Beat 4, Beat 8...)</label>
+        </div>
+        
+        <div class="input-group">
+            <label for="pragDriftaFrameovi">8. Prag drifta (u frameovima, zaokruživanje beatova):</label>
+            <input type="number" id="pragDriftaFrameovi" value="1" min="0" step="1">
+        </div>
+
+        <button id="calculateButton">Izračunaj Markere</button>
+        <button id="downloadXmlButton" style="display: none;">Preuzmi XML</button>
+
+        <div id="rezultat"></div>
+        <div id="xmlOutput"></div>
     </div>
 
-    <script src="FileSaver.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
