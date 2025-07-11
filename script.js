@@ -455,3 +455,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         loadedXmlData = null; // Resetirajte loadedXmlData u slučaju greške
                         // Opcionalno: Resetirajte input polja na 00:00:00:00 ili prazno
                         pocetakGlazbenogSegmentaInput.value = '00:00:00:00';
+                        krajGlazbenogSegmentaInput.value = '00:00:00:00';
+                        ukupnoTrajanjeDatotekeInput.value = '00:00:00:00';
+                    });
+            } else {
+                xmlStatus.textContent = 'Nije odabrana XML datoteka.';
+                loadedXmlData = null;
+            }
+        });
+    } else {
+        console.warn("Upozorenje: Input za XML datoteku s ID-jem 'ediusXmlFile' NIJE PRONAĐEN.");
+    }
+
+
+    // Funkcija koja se poziva na klik gumba "Izračunaj Markere"
+    function izracunajMarkere() {
+        console.log("Funkcija izracunajMarkere se pokreće.");
+        // Pozovite calculateBPM, koja će obaviti sve provjere i izračune
+        const results = calculateBPM();
+        if (results) {
+            console.log("Izračuni završeni, rezultati:", results);
+            // Ako su izračuni uspješni, rezultati su u 'results' objektu.
+            // Ovdje možete dodatno manipulirati rezultatima ako je potrebno.
+            // Npr. automatski generirati XML nakon izračuna ako je to željeno ponašanje.
+            // generateXml(results.markeri, results.fps);
+        } else {
+            console.log("calculateBPM nije vratila rezultate (vjerojatno zbog greške ili validacije).");
+        }
+    }
+});
