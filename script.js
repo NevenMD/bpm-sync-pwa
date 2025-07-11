@@ -218,11 +218,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('markeriOutput element nije pronađen prilikom pokušaja postavljanja innerHTML-a.');
         }
 
-        // Omogući XML gumb
+        // Omogući XML gumb i prikaži ga
         if (generateXmlButton) {
             generateXmlButton.disabled = false;
-            console.log('generateXmlButton.disabled je postavljen na false.');
+            generateXmlButton.style.display = 'block'; // Dodano: Prikaži gumb za generiranje
+            console.log('generateXmlButton.disabled je postavljen na false i display na block.');
         }
+        if (downloadXmlButton) {
+            downloadXmlButton.style.display = 'block'; // Dodano: Prikaži gumb za preuzimanje
+            console.log('downloadXmlButton.style.display je postavljen na block.');
+        }
+
 
         return {
             varijabilniBPM: varijabilniBPM,
