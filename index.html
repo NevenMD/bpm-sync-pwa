@@ -74,20 +74,22 @@
                 <input type="number" id="pragDriftaFrameovi" value="1" min="0">
             </div>
 
+            <p id="rezultat" class="info-message"></p> 
+
             <button id="calculateButton">Izračunaj Markere</button>
         </div>
 
         <div id="results-page" class="page">
             <h2>Rezultati proračuna</h2>
             <div id="markeriOutput" class="output-section">
-                </div>
-            <button id="generateXmlButton" style="display:none;">Generiraj XML</button>
+            </div>
             <button id="downloadXmlButton" style="display:none;">Preuzmi XML</button>
             <div id="xmlOutput" class="output-section xml-output">
-                </div>
+            </div>
         </div>
     </div>
 
-    <script src="script.js"></script> 
+    <script src="FileSaver.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

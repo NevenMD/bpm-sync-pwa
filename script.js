@@ -18,8 +18,8 @@ const ciljaniBPMInput = document.getElementById('ciljaniBPM');
 const fpsSelect = document.getElementById('fpsSelect');
 const mjeraTaktaInput = document.getElementById('mjeraTakta');
 const ukupnoTrajanjeDatotekeInput = document.getElementById('ukupnoTrajanjeDatotekeInput');
-const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmentaInput'); // ISPRAVLJEN ID (bio pocetakGlazbenogSegmenta)
-const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmentaInput'); // ISPRAVLJEN ID (bio krajGlazbenogSegmenta)
+const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmentaInput');
+const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmentaInput');
 const pragDriftaFrameoviInput = document.getElementById('pragDriftaFrameovi');
 
 const calculateButton = document.getElementById('calculateButton');
@@ -30,7 +30,7 @@ const inputPage = document.getElementById('input-page');
 const resultsPage = document.getElementById('results-page');
 const markeriOutput = document.getElementById('markeriOutput');
 const xmlOutputDiv = document.getElementById('xmlOutput');
-const rezultatDiv = document.getElementById('rezultat'); // Koristit ćemo ovo za opće poruke
+const rezultatDiv = document.getElementById('rezultat'); // VAŽNO: PROVJERI HTML ZA OVAJ ID!
 
 // --- Event Listeneri ---
 if (ediusXmlFileInput) {
@@ -42,7 +42,7 @@ if (clearXmlButton) {
 if (calculateButton) {
     calculateButton.addEventListener('click', calculateMarkersAndShowResults);
 }
-if (downloadXmlButton) { // Sada je ovo glavni gumb za preuzimanje
+if (downloadXmlButton) {
     downloadXmlButton.addEventListener('click', generateXmlAndDownload);
 }
 
@@ -78,18 +78,28 @@ function handleXmlFileSelect(event) {
             try {
                 const xmlString = e.target.result;
                 parseEdiusXmlFile(xmlString);
-                xmlStatus.textContent = `Učitano: ${file.name}`;
-                xmlStatus.style.display = 'block';
-                clearXmlButton.style.display = 'inline-block';
+                // Ako je rezultatDiv pronađen, postavi status poruku
+                if (xmlStatus) { // Dodana provjera postojanja elementa
+                    xmlStatus.textContent = `Učitano: ${file.name}`;
+                    xmlStatus.style.display = 'block';
+                }
+                if (clearXmlButton) { // Dodana provjera postojanja elementa
+                    clearXmlButton.style.display = 'inline-block';
+                }
                 console.log("EDIUS XML datoteka uspješno pročitana.");
-                // Ovdje NE mijenjamo stranicu, samo popunjavamo inpute
-                rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Sada možete izračunati markere.';
+                if (rezultatDiv) { // Dodana provjera postojanja elementa
+                    rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Sada možete izračunati markere.';
+                }
 
             } catch (error) {
                 console.error("Greška pri parsiranju XML datoteke:", error);
-                xmlStatus.textContent = `Greška pri učitavanju: ${error.message}`;
-                xmlStatus.style.display = 'block';
-                clearXmlButton.style.display = 'inline-block';
+                if (xmlStatus) { // Dodana provjera postojanja elementa
+                    xmlStatus.textContent = `Greška pri učitavanju: ${error.message}`;
+                    xmlStatus.style.display = 'block';
+                }
+                if (clearXmlButton) { // Dodana provjera postojanja elementa
+                    clearXmlButton.style.display = 'inline-block';
+                }
             }
         };
         reader.readAsText(file);
@@ -111,7 +121,7 @@ function clearXmlData() {
     if (krajGlazbenogSegmentaInput) krajGlazbenogSegmentaInput.value = '';
     if (xmlStatus) xmlStatus.style.display = 'none';
     if (clearXmlButton) clearXmlButton.style.display = 'none';
-    if (rezultatDiv) rezultatDiv.textContent = '';
+    if (rezultatDiv) rezultatDiv.textContent = ''; // Provjera postojanja
     if (markeriOutput) markeriOutput.innerHTML = '';
     if (xmlOutputDiv) xmlOutputDiv.innerHTML = '';
     if (downloadXmlButton) downloadXmlButton.style.display = 'none';
@@ -147,8 +157,6 @@ function parseEdiusXmlFile(xmlString) {
     console.log("XML dokument učitan (parseEdiusXmlFile):", xmlDoc);
 
     // Korištenje XPath za sigurnije dohvaćanje elemenata s namespace-om
-    // const markers = xmlDoc.querySelectorAll('edius\\:marker'); // Ovo radi u većini preglednika
-    // Ažurirano za bolju kompatibilnost s namespaceovima koristeći evaluate
     const markers = xmlDoc.evaluate('//edius:marker', xmlDoc, (prefix) => {
         if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
         return null;
@@ -159,7 +167,7 @@ function parseEdiusXmlFile(xmlString) {
 
     if (markers.snapshotLength === 0) {
         console.warn("Nema markera pronađenih u XML datoteci.");
-        rezultatDiv.textContent = 'Upozorenje: Nema markera pronađenih u XML datoteci.';
+        if (rezultatDiv) rezultatDiv.textContent = 'Upozorenje: Nema markera pronađenih u XML datoteci.';
         return;
     }
 
@@ -174,15 +182,24 @@ function parseEdiusXmlFile(xmlString) {
         const firstMarker = markers.snapshotItem(0);
         const lastMarker = markers.snapshotItem(markers.snapshotLength - 1);
 
-        const firstMarkerPos = firstMarker.querySelector('edius\\:position');
-        if (firstMarkerPos) {
-            fileStartTC = firstMarkerPos.textContent.trim();
+        // Ažurirano: Korištenje XPatha za dohvaćanje unutar markera
+        const firstMarkerPosNode = xmlDoc.evaluate('edius:position', firstMarker, (prefix) => {
+            if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
+            return null;
+        }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (firstMarkerPosNode) {
+            fileStartTC = firstMarkerPosNode.textContent.trim();
             console.log("Pronađen prvi marker (fileStartTC):", fileStartTC);
         }
 
-        const lastMarkerPos = lastMarker.querySelector('edius\\:position');
-        if (lastMarkerPos) {
-            fileEndTC = lastMarkerPos.textContent.trim();
+        const lastMarkerPosNode = xmlDoc.evaluate('edius:position', lastMarker, (prefix) => {
+            if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
+            return null;
+        }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        if (lastMarkerPosNode) {
+            fileEndTC = lastMarkerPosNode.textContent.trim();
             console.log("Pronađen zadnji marker (fileEndTC):", fileEndTC);
         }
     }
@@ -190,12 +207,22 @@ function parseEdiusXmlFile(xmlString) {
     // Iteriranje kroz markere za pronalaženje 'glazba_pocetak' i 'glazba_kraj'
     for (let i = 0; i < markers.snapshotLength; i++) {
         const marker = markers.snapshotItem(i);
-        const commentElement = marker.querySelector('edius\\:comment');
-        const positionElement = marker.querySelector('edius\\:position');
 
-        if (commentElement && positionElement) {
-            const comment = commentElement.textContent.trim();
-            const position = positionElement.textContent.trim();
+        // Ažurirano: Korištenje XPatha za dohvaćanje unutar markera
+        const commentNode = xmlDoc.evaluate('edius:comment', marker, (prefix) => {
+            if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
+            return null;
+        }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+        const positionNode = xmlDoc.evaluate('edius:position', marker, (prefix) => {
+            if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
+            return null;
+        }, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+
+        if (commentNode && positionNode) {
+            const comment = commentNode.textContent.trim();
+            const position = positionNode.textContent.trim();
 
             console.log(`--- Marker ${i + 1} ---`);
             console.log(" Sadržaj komentara:", JSON.stringify(comment));
@@ -225,13 +252,16 @@ function parseEdiusXmlFile(xmlString) {
         ukupnoTrajanjeDatotekeInput.value = fileEndTC || '';
     }
 
-
     if (musicStartTC && musicEndTC) {
-        rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja. Sada možete kliknuti "Izračunaj Markere".';
-        rezultatDiv.style.color = 'green';
+        if (rezultatDiv) { // Dodana provjera postojanja elementa
+            rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja. Sada možete kliknuti "Izračunaj Markere".';
+            rezultatDiv.style.color = 'green';
+        }
     } else {
-        rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u. Unesite ih ručno ili provjerite XML.';
-        rezultatDiv.style.color = 'orange';
+        if (rezultatDiv) { // Dodana provjera postojanja elementa
+            rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u. Unesite ih ručno ili provjerite XML.';
+            rezultatDiv.style.color = 'orange';
+        }
     }
 }
 
@@ -274,35 +304,46 @@ function framesToTimecode(totalFrames, fps) {
  * Izračunava markere i prikazuje rezultate, te prebacuje na stranicu rezultata.
  */
 function calculateMarkersAndShowResults() {
-    const fps = parseFloat(fpsSelect.value); // Ispravljen ID
-    const fiksniBPM = parseFloat(fiksniBPMInput.value); // Ispravljen ID
-    const ciljaniBPM = parseFloat(ciljaniBPMInput.value); // Ispravljen ID
-    const mjeraTakta = parseInt(mjeraTaktaInput.value, 10); // Ispravljen ID
-    const pragDriftaFrameovi = parseInt(pragDriftaFrameoviInput.value, 10); // Ispravljen ID
+    const fps = parseFloat(fpsSelect.value);
+    const fiksniBPM = parseFloat(fiksniBPMInput.value);
+    const ciljaniBPM = parseFloat(ciljaniBPMInput.value);
+    const mjeraTakta = parseInt(mjeraTaktaInput.value, 10);
+    const pragDriftaFrameovi = parseInt(pragDriftaFrameoviInput.value, 10);
 
-    if (isNaN(fps) || fps <= 0) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravan FPS (veći od 0).';
-        rezultatDiv.style.color = 'red';
+    // Dodane provjere postojanja elementa prije pristupa value/textContent
+    if (!fiksniBPMInput || isNaN(fiksniBPM) || fiksniBPM <= 0) {
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Unesite ispravan Fiksni BPM (veći od 0).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
-    if (isNaN(fiksniBPM) || fiksniBPM <= 0) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravan Fiksni BPM (veći od 0).';
-        rezultatDiv.style.color = 'red';
+    if (!ciljaniBPMInput || isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Unesite ispravan Ciljani BPM (veći od 0).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
-    if (isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravan Ciljani BPM (veći od 0).';
-        rezultatDiv.style.color = 'red';
+    if (!fpsSelect || isNaN(fps) || fps <= 0) {
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Unesite ispravan FPS (veći od 0).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
-    if (isNaN(mjeraTakta) || mjeraTakta < 1) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravnu mjeru takta (barem 1).';
-        rezultatDiv.style.color = 'red';
+    if (!mjeraTaktaInput || isNaN(mjeraTakta) || mjeraTakta < 1) {
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Unesite ispravnu mjeru takta (barem 1).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
-    if (isNaN(pragDriftaFrameovi) || pragDriftaFrameovi < 0) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravan prag drifta (0 ili veći).';
-        rezultatDiv.style.color = 'red';
+    if (!pragDriftaFrameoviInput || isNaN(pragDriftaFrameovi) || pragDriftaFrameovi < 0) {
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Unesite ispravan prag drifta (0 ili veći).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
 
@@ -310,8 +351,10 @@ function calculateMarkersAndShowResults() {
     const krajSegmenta = krajGlazbenogSegmentaInput.value;
 
     if (!pocetakSegmenta || !krajSegmenta) {
-        rezultatDiv.textContent = 'Greška: Molimo unesite početni i krajnji timecode glazbenog segmenta (ili učitajte XML).';
-        rezultatDiv.style.color = 'red';
+        if (rezultatDiv) {
+            rezultatDiv.textContent = 'Greška: Molimo unesite početni i krajnji timecode glazbenog segmenta (ili učitajte XML).';
+            rezultatDiv.style.color = 'red';
+        }
         return;
     }
 
@@ -320,8 +363,10 @@ function calculateMarkersAndShowResults() {
         const endFrames = timecodeToFrames(krajSegmenta, fps);
 
         if (endFrames <= startFrames) {
-            rezultatDiv.textContent = 'Greška: Krajnji timecode mora biti veći od početnog timecodea.';
-            rezultatDiv.style.color = 'red';
+            if (rezultatDiv) {
+                rezultatDiv.textContent = 'Greška: Krajnji timecode mora biti veći od početnog timecodea.';
+                rezultatDiv.style.color = 'red';
+            }
             return;
         }
 
@@ -369,25 +414,29 @@ function calculateMarkersAndShowResults() {
             beatIndex++;
         }
         markerDisplayHtml += '</ul>';
-        markeriOutput.innerHTML = markerDisplayHtml;
+        if (markeriOutput) markeriOutput.innerHTML = markerDisplayHtml; // Provjera postojanja
 
         console.log("Izračunati beat markeri:", calculatedBeatMarkers);
 
         // Prikaz upozorenja o driftu ako je varijabilniBPM veći od 0 ili manji od 0
-        if (varijabilniBPM !== 0) { // Ako je različito od 0, postoji drift
-            rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Drift: ${varijabilniBPM.toFixed(4)}. Kliknite "Preuzmi XML" gumb.`;
-            rezultatDiv.style.color = 'blue';
-        } else {
-            rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Nema drifta. Kliknite "Preuzmi XML" gumb.`;
-            rezultatDiv.style.color = 'green';
+        if (rezultatDiv) { // Provjera postojanja
+            if (varijabilniBPM !== 0) { // Ako je različito od 0, postoji drift
+                rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Drift: ${varijabilniBPM.toFixed(4)}. Kliknite "Preuzmi XML" gumb.`;
+                rezultatDiv.style.color = 'blue';
+            } else {
+                rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Nema drifta. Kliknite "Preuzmi XML" gumb.`;
+                rezultatDiv.style.color = 'green';
+            }
         }
 
         showPage('results-page'); // Prelazak na stranicu s rezultatima
 
     } catch (error) {
         console.error("Greška pri izračunu markera:", error);
-        rezultatDiv.textContent = `Greška pri izračunu: ${error.message}`;
-        rezultatDiv.style.color = 'red';
+        if (rezultatDiv) { // Provjera postojanja
+            rezultatDiv.textContent = `Greška pri izračunu: ${error.message}`;
+            rezultatDiv.style.color = 'red';
+        }
     }
 }
 
@@ -433,13 +482,17 @@ function generateXmlAndDownload() {
 
         // Korištenje FileSaver.js za preuzimanje datoteke
         saveAs(blob, 'Edius_Beat_Markers.xml');
-        xmlOutputDiv.textContent = 'XML datoteka "Edius_Beat_Markers.xml" uspješno preuzeta.';
-        xmlOutputDiv.style.color = 'green';
+        if (xmlOutputDiv) { // Provjera postojanja
+            xmlOutputDiv.textContent = 'XML datoteka "Edius_Beat_Markers.xml" uspješno preuzeta.';
+            xmlOutputDiv.style.color = 'green';
+        }
 
     } catch (error) {
         console.error("Greška pri generiranju XML-a:", error);
-        xmlOutputDiv.textContent = `Greška pri generiranju XML-a: ${error.message}`;
-        xmlOutputDiv.style.color = 'red';
+        if (xmlOutputDiv) { // Provjera postojanja
+            xmlOutputDiv.textContent = `Greška pri generiranju XML-a: ${error.message}`;
+            xmlOutputDiv.style.color = 'red';
+        }
     }
 }
 
