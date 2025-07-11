@@ -9,7 +9,7 @@ let fileEndTC = null;   // Zadnji marker iz Edius XML-a
 let calculatedBeatMarkers = [];
 
 // HTML elementi - Ažurirani ID-jevi i dodani novi
-const ediusXmlFileInput = document.getElementById('ediusXmlFile'); // ISPRAVLJEN ID
+const ediusXmlFileInput = document.getElementById('ediusXmlFile');
 const clearXmlButton = document.getElementById('clearXmlButton');
 const xmlStatus = document.getElementById('xmlStatus');
 
@@ -89,6 +89,7 @@ function handleXmlFileSelect(event) {
                 console.log("EDIUS XML datoteka uspješno pročitana.");
                 if (rezultatDiv) { // Dodana provjera postojanja elementa
                     rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Sada možete izračunati markere.';
+                    rezultatDiv.style.color = 'green';
                 }
 
             } catch (error) {
@@ -99,6 +100,10 @@ function handleXmlFileSelect(event) {
                 }
                 if (clearXmlButton) { // Dodana provjera postojanja elementa
                     clearXmlButton.style.display = 'inline-block';
+                }
+                if (rezultatDiv) { // Dodana provjera postojanja elementa
+                    rezultatDiv.textContent = `Greška pri parsiranju XML-a: ${error.message}`;
+                    rezultatDiv.style.color = 'red';
                 }
             }
         };
@@ -253,12 +258,12 @@ function parseEdiusXmlFile(xmlString) {
     }
 
     if (musicStartTC && musicEndTC) {
-        if (rezultatDiv) { // Dodana provjera postojanja elementa
+        if (rezultatDiv) {
             rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja. Sada možete kliknuti "Izračunaj Markere".';
             rezultatDiv.style.color = 'green';
         }
     } else {
-        if (rezultatDiv) { // Dodana provjera postojanja elementa
+        if (rezultatDiv) {
             rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u. Unesite ih ručno ili provjerite XML.';
             rezultatDiv.style.color = 'orange';
         }
@@ -433,7 +438,7 @@ function calculateMarkersAndShowResults() {
 
     } catch (error) {
         console.error("Greška pri izračunu markera:", error);
-        if (rezultatDiv) { // Provjera postojanja
+        if (rezultatDiv) {
             rezultatDiv.textContent = `Greška pri izračunu: ${error.message}`;
             rezultatDiv.style.color = 'red';
         }
@@ -482,14 +487,14 @@ function generateXmlAndDownload() {
 
         // Korištenje FileSaver.js za preuzimanje datoteke
         saveAs(blob, 'Edius_Beat_Markers.xml');
-        if (xmlOutputDiv) { // Provjera postojanja
+        if (xmlOutputDiv) {
             xmlOutputDiv.textContent = 'XML datoteka "Edius_Beat_Markers.xml" uspješno preuzeta.';
             xmlOutputDiv.style.color = 'green';
         }
 
     } catch (error) {
         console.error("Greška pri generiranju XML-a:", error);
-        if (xmlOutputDiv) { // Provjera postojanja
+        if (xmlOutputDiv) {
             xmlOutputDiv.textContent = `Greška pri generiranju XML-a: ${error.message}`;
             xmlOutputDiv.style.color = 'red';
         }
@@ -515,10 +520,13 @@ function getFormattedEdiusDate() {
 
 // --- Funkcija za generiranje Edius-kompatibilnog XML-a ---
 function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
-    const doc = document.implementation.createDocument(null, 'edius:markerInfo', null);
+    const XML_NAMESPACE_URI = 'http://www.grassvalley.com/ns/edius/markerListInfo';
+    // IZMIJENJENA LINIJA: Prvi argument je sada ispravan namespace URI
+    const doc = document.implementation.createDocument(XML_NAMESPACE_URI, 'edius:markerInfo', null);
     const root = doc.documentElement;
 
-    root.setAttribute('xmlns:edius', 'http://www.grassvalley.com/ns/edius/markerListInfo');
+    // Ova linija je sada donekle redundantna, ali je sigurno ostaviti je
+    root.setAttribute('xmlns:edius', XML_NAMESPACE_URI);
 
     const formatVersion = doc.createElement('edius:formatVersion');
     formatVersion.textContent = '4';
@@ -526,73 +534,4 @@ function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
 
     const createDate = doc.createElement('edius:CreateDate');
     createDate.textContent = getFormattedEdiusDate();
-    root.appendChild(createDate);
-
-    const markerLists = doc.createElement('edius:markerLists');
-    root.appendChild(markerLists);
-
-    let markerNoCounter = 1;
-
-    // Dodaje početni marker na 00:00:00:00 ako je pronađen u ulaznom XML-u (fileStartTC)
-    const initialMarker = doc.createElement('edius:marker');
-    initialMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
-    initialMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
-    // Koristi fileStartTC iz parsiranog XML-a, ili default '00:00:00:00'
-    initialMarker.appendChild(doc.createElement('edius:position')).textContent = fileStartTC || '00:00:00:00';
-    initialMarker.appendChild(doc.createElement('edius:duration')).textContent = '--:--:--:--';
-    initialMarker.appendChild(doc.createElement('edius:comment')).textContent = '';
-    initialMarker.appendChild(doc.createElement('edius:color')).textContent = '0xffffffff';
-    markerLists.appendChild(initialMarker);
-
-    // Dodaje 'glazba_pocetak' marker ako je dostupan i nije isti kao početni marker (00:00:00:00)
-    // Važno: Provjeravamo da li se musicStartTC razlikuje od initialMarkera da ne bi duplicirali 00:00:00:00
-    if (musicStartTC && musicStartTC !== (fileStartTC || '00:00:00:00')) {
-        const startMarker = doc.createElement('edius:marker');
-        startMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
-        startMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
-        startMarker.appendChild(doc.createElement('edius:position')).textContent = musicStartTC;
-        startMarker.appendChild(doc.createElement('edius:duration')).textContent = '--:--:--:--';
-        startMarker.appendChild(doc.createElement('edius:comment')).textContent = 'glazba_pocetak';
-        startMarker.appendChild(doc.createElement('edius:color')).textContent = '0xffffffff';
-        markerLists.appendChild(startMarker);
-    }
-
-    // Dodaje sve izračunate beat markere
-    beatMarkers.forEach((marker) => {
-        const beatMarker = doc.createElement('edius:marker');
-        beatMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
-        beatMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
-        beatMarker.appendChild(doc.createElement('edius:position')).textContent = marker.timecode;
-        beatMarker.appendChild(doc.createElement('edius:duration')).textContent = '--:--:--:--';
-        beatMarker.appendChild(doc.createElement('edius:comment')).textContent = marker.comment;
-        beatMarker.appendChild(doc.createElement('edius:color')).textContent = '0xffffffff';
-        markerLists.appendChild(beatMarker);
-    });
-
-    // Dodaje 'glazba_kraj' marker ako je dostupan
-    if (musicEndTC) {
-        const endMarker = doc.createElement('edius:marker');
-        endMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
-        endMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
-        endMarker.appendChild(doc.createElement('edius:position')).textContent = musicEndTC;
-        endMarker.appendChild(doc.createElement('edius:duration')).textContent = '--:--:--:--';
-        endMarker.appendChild(doc.createElement('edius:comment')).textContent = 'glazba_kraj';
-        endMarker.appendChild(doc.createElement('edius:color')).textContent = '0xffffffff';
-        markerLists.appendChild(endMarker);
-    }
-
-    const serializer = new XMLSerializer();
-    let xmlString = serializer.serializeToString(doc);
-
-    // Dodaje UTF-16 XML deklaraciju i uklanja potencijalnu defaultnu UTF-8 deklaraciju
-    xmlString = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>\n` +
-                xmlString.replace(/<\?xml version="1.0"( encoding="utf-8")?\?>/i, '');
-
-    // Zamjena LF s CRLF za Windows kompatibilnost
-    xmlString = xmlString.replace(/\n/g, '\r\n');
-
-    return xmlString;
-}
-
-// Pozovi ovu funkciju kada se stranica učita
-document.addEventListener('DOMContentLoaded', initializeApp);
+    root.appendChild(
