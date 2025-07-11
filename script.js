@@ -1,7 +1,3 @@
-Nema problema! Razumijem da je ovo bilo frustrirajuće. Evo ti cijeli i kompletan script.js kod ponovno.
-
-Molim te, kopiraj SVE od prve linije do zadnje i zamijeni njime cijeli sadržaj svoje script.js datoteke. Dvaput provjeri da nisi ništa izostavio.
-
 JavaScript
 
 // Globalne varijable za pohranu početnog i krajnjeg timecodea glazbenog segmenta
