@@ -5,22 +5,68 @@ let musicEndTC = null;
 let fileStartTC = null; // Prvi marker iz Edius XML-a
 let fileEndTC = null;   // Zadnji marker iz Edius XML-a
 
-// HTML elementi (pretpostavlja se da postoje u tvom HTML-u)
-const xmlFileInput = document.getElementById('xmlFileInput');
-const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmenta');
-const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmenta');
-const fpsInput = document.getElementById('fps');
-const bpmInput = document.getElementById('bpm');
-const varijabilniBpmInput = document.getElementById('varijabilniBPM'); // Dodano za varijabilni BPM
-const generirajXmlBtn = document.getElementById('generirajXmlBtn');
-const rezultatDiv = document.getElementById('rezultat'); // Div za prikaz rezultata
+// Globalna varijabla za pohranu izračunatih beat markera za generiranje XML-a
+let calculatedBeatMarkers = [];
 
-// Event listeneri
-if (xmlFileInput) {
-    xmlFileInput.addEventListener('change', handleXmlFileSelect);
+// HTML elementi - Ažurirani ID-jevi i dodani novi
+const ediusXmlFileInput = document.getElementById('ediusXmlFile'); // ISPRAVLJEN ID
+const clearXmlButton = document.getElementById('clearXmlButton');
+const xmlStatus = document.getElementById('xmlStatus');
+
+const fiksniBPMInput = document.getElementById('fiksniBPM');
+const ciljaniBPMInput = document.getElementById('ciljaniBPM');
+const fpsSelect = document.getElementById('fpsSelect');
+const mjeraTaktaInput = document.getElementById('mjeraTakta');
+const ukupnoTrajanjeDatotekeInput = document.getElementById('ukupnoTrajanjeDatotekeInput');
+const pocetakGlazbenogSegmentaInput = document.getElementById('pocetakGlazbenogSegmentaInput'); // ISPRAVLJEN ID (bio pocetakGlazbenogSegmenta)
+const krajGlazbenogSegmentaInput = document.getElementById('krajGlazbenogSegmentaInput'); // ISPRAVLJEN ID (bio krajGlazbenogSegmenta)
+const pragDriftaFrameoviInput = document.getElementById('pragDriftaFrameovi');
+
+const calculateButton = document.getElementById('calculateButton');
+const generateXmlButton = document.getElementById('generateXmlButton'); // Novi gumb za generiranje XML-a
+const downloadXmlButton = document.getElementById('downloadXmlButton'); // Gumb za preuzimanje XML-a (isti kao generateXmlButton, ali drugačiji ID)
+
+const inputPage = document.getElementById('input-page');
+const resultsPage = document.getElementById('results-page');
+const markeriOutput = document.getElementById('markeriOutput');
+const xmlOutputDiv = document.getElementById('xmlOutput');
+const rezultatDiv = document.getElementById('rezultat'); // Koristit ćemo ovo za opće poruke
+
+// --- Event Listeneri ---
+if (ediusXmlFileInput) {
+    ediusXmlFileInput.addEventListener('change', handleXmlFileSelect);
 }
-if (generirajXmlBtn) {
-    generirajXmlBtn.addEventListener('click', generateXmlAndDownload);
+if (clearXmlButton) {
+    clearXmlButton.addEventListener('click', clearXmlData);
+}
+if (calculateButton) {
+    calculateButton.addEventListener('click', calculateMarkersAndShowResults);
+}
+if (downloadXmlButton) { // Sada je ovo glavni gumb za preuzimanje
+    downloadXmlButton.addEventListener('click', generateXmlAndDownload);
+}
+
+// Inicijalizacija stanja
+function initializeApp() {
+    clearXmlData(); // Počistimo sve na početku
+    showPage('input-page'); // Prikazujemo početnu stranicu
+}
+
+// Funkcija za prebacivanje između stranica
+function showPage(pageId) {
+    if (inputPage) inputPage.classList.remove('active');
+    if (resultsPage) resultsPage.classList.remove('active');
+
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        // Skrivanje/prikaz gumba za preuzimanje XML-a ovisno o stranici
+        if (pageId === 'results-page') {
+            if (downloadXmlButton) downloadXmlButton.style.display = 'block';
+        } else {
+            if (downloadXmlButton) downloadXmlButton.style.display = 'none';
+        }
+    }
 }
 
 // Funkcija za obradu odabrane XML datoteke
@@ -32,16 +78,55 @@ function handleXmlFileSelect(event) {
             try {
                 const xmlString = e.target.result;
                 parseEdiusXmlFile(xmlString);
+                xmlStatus.textContent = `Učitano: ${file.name}`;
+                xmlStatus.style.display = 'block';
+                clearXmlButton.style.display = 'inline-block';
                 console.log("EDIUS XML datoteka uspješno pročitana.");
-                rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Provjerite unesene vrijednosti i generirajte XML.';
+                // Ovdje NE mijenjamo stranicu, samo popunjavamo inpute
+                rezultatDiv.textContent = 'EDIUS XML datoteka uspješno učitana. Sada možete izračunati markere.';
+
             } catch (error) {
                 console.error("Greška pri parsiranju XML datoteke:", error);
-                rezultatDiv.textContent = `Greška pri učitavanju XML datoteke: ${error.message}`;
+                xmlStatus.textContent = `Greška pri učitavanju: ${error.message}`;
+                xmlStatus.style.display = 'block';
+                clearXmlButton.style.display = 'inline-block';
             }
         };
         reader.readAsText(file);
+    } else {
+        clearXmlData();
     }
 }
+
+// Funkcija za poništavanje učitanog XML-a i resetiranje input polja
+function clearXmlData() {
+    musicStartTC = null;
+    musicEndTC = null;
+    fileStartTC = null;
+    fileEndTC = null;
+    calculatedBeatMarkers = [];
+
+    if (ediusXmlFileInput) ediusXmlFileInput.value = ''; // Resetiraj file input
+    if (pocetakGlazbenogSegmentaInput) pocetakGlazbenogSegmentaInput.value = '';
+    if (krajGlazbenogSegmentaInput) krajGlazbenogSegmentaInput.value = '';
+    if (xmlStatus) xmlStatus.style.display = 'none';
+    if (clearXmlButton) clearXmlButton.style.display = 'none';
+    if (rezultatDiv) rezultatDiv.textContent = '';
+    if (markeriOutput) markeriOutput.innerHTML = '';
+    if (xmlOutputDiv) xmlOutputDiv.innerHTML = '';
+    if (downloadXmlButton) downloadXmlButton.style.display = 'none';
+
+    // Postavi defaultne vrijednosti (ako želiš da se inputi vrate na nešto)
+    if (fiksniBPMInput) fiksniBPMInput.value = "120.0000";
+    if (ciljaniBPMInput) ciljaniBPMInput.value = "128.0000";
+    if (fpsSelect) fpsSelect.value = "25";
+    if (mjeraTaktaInput) mjeraTaktaInput.value = "4";
+    if (ukupnoTrajanjeDatotekeInput) ukupnoTrajanjeDatotekeInput.value = "00:05:00:00";
+    if (pragDriftaFrameoviInput) pragDriftaFrameoviInput.value = "1";
+
+    showPage('input-page'); // Vrati se na početnu stranicu
+}
+
 
 /**
  * Parsira EDIUS XML string i izvlači timecodeove markera.
@@ -61,63 +146,71 @@ function parseEdiusXmlFile(xmlString) {
 
     console.log("XML dokument učitan (parseEdiusXmlFile):", xmlDoc);
 
-    const markers = xmlDoc.querySelectorAll('edius\\:marker');
-    console.log("Pronađeni markeri (NodeList) (parseEdiusXmlFile):", markers);
+    // Korištenje XPath za sigurnije dohvaćanje elemenata s namespace-om
+    // const markers = xmlDoc.querySelectorAll('edius\\:marker'); // Ovo radi u većini preglednika
+    const markers = xmlDoc.evaluate('//edius:marker', xmlDoc, (prefix) => {
+        if (prefix === 'edius') return 'http://www.grassvalley.com/ns/edius/markerListInfo';
+        return null;
+    }, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 
-    if (markers.length === 0) {
+
+    console.log("Pronađeni markeri (Snapshot) (parseEdiusXmlFile):", markers.snapshotLength);
+
+    if (markers.snapshotLength === 0) {
         console.warn("Nema markera pronađenih u XML datoteci.");
         rezultatDiv.textContent = 'Upozorenje: Nema markera pronađenih u XML datoteci.';
         return;
     }
 
-    // Resetiranje globalnih varijabli
+    // Resetiranje globalnih varijabli prije popunjavanja
     musicStartTC = null;
     musicEndTC = null;
     fileStartTC = null;
     fileEndTC = null;
 
-    // Prvi marker (obično 00:00:00:00)
-    if (markers.length > 0) {
-        const firstMarkerPos = markers[0].querySelector('edius\\:position');
+    // Dohvaćanje prvog i zadnjeg markera
+    if (markers.snapshotLength > 0) {
+        const firstMarker = markers.snapshotItem(0);
+        const lastMarker = markers.snapshotItem(markers.snapshotLength - 1);
+
+        const firstMarkerPos = firstMarker.querySelector('edius\\:position');
         if (firstMarkerPos) {
-            fileStartTC = firstMarkerPos.textContent;
+            fileStartTC = firstMarkerPos.textContent.trim();
             console.log("Pronađen prvi marker (fileStartTC):", fileStartTC);
         }
-    }
 
-    // Posljednji marker
-    if (markers.length > 0) {
-        const lastMarkerPos = markers[markers.length - 1].querySelector('edius\\:position');
+        const lastMarkerPos = lastMarker.querySelector('edius\\:position');
         if (lastMarkerPos) {
-            fileEndTC = lastMarkerPos.textContent;
+            fileEndTC = lastMarkerPos.textContent.trim();
             console.log("Pronađen zadnji marker (fileEndTC):", fileEndTC);
         }
     }
 
-    markers.forEach((marker, index) => {
-        console.log(`--- Marker ${index + 1} (parseEdiusXmlFile) ---`);
+    // Iteriranje kroz markere za pronalaženje 'glazba_pocetak' i 'glazba_kraj'
+    for (let i = 0; i < markers.snapshotLength; i++) {
+        const marker = markers.snapshotItem(i);
         const commentElement = marker.querySelector('edius\\:comment');
         const positionElement = marker.querySelector('edius\\:position');
 
         if (commentElement && positionElement) {
-            console.log(" Pronađen komentar element (parseEdiusXmlFile):", commentElement);
             const comment = commentElement.textContent.trim();
-            console.log(" Sadržaj komentara (parseEdiusXmlFile):", JSON.stringify(comment)); // Koristi JSON.stringify za vidljivost skrivenih znakova
-            console.log(" Pronađena pozicija element (parseEdiusXmlFile):", positionElement);
             const position = positionElement.textContent.trim();
-            console.log(" Sadržaj pozicije (parseEdiusXmlFile):", JSON.stringify(position));
+
+            console.log(`--- Marker ${i + 1} ---`);
+            console.log(" Sadržaj komentara:", JSON.stringify(comment));
+            console.log(" Sadržaj pozicije:", JSON.stringify(position));
 
             if (comment === 'glazba_pocetak') {
                 musicStartTC = position;
-                console.log("!!! Postavljen musicStartTC na (parseEdiusXmlFile):", musicStartTC);
+                console.log("!!! Postavljen musicStartTC na:", musicStartTC);
             } else if (comment === 'glazba_kraj') {
                 musicEndTC = position;
-                console.log("!!! Postavljen musicEndTC na (parseEdiusXmlFile):", musicEndTC);
+                console.log("!!! Postavljen musicEndTC na:", musicEndTC);
             }
         } else {
-            console.warn(`Marker ${index + 1} nema element za komentar ili poziciju.`);
+            console.warn(`Marker ${i + 1} nema element za komentar ili poziciju.`);
         }
-    });
+    }
 
     // Ažuriranje input polja na temelju parsiranih vrijednosti
     if (pocetakGlazbenogSegmentaInput) {
@@ -126,11 +219,18 @@ function parseEdiusXmlFile(xmlString) {
     if (krajGlazbenogSegmentaInput) {
         krajGlazbenogSegmentaInput.value = musicEndTC || '';
     }
+    if (ukupnoTrajanjeDatotekeInput) {
+        // Ako postoji fileEndTC iz Edius XML-a, popuni trajanje datoteke
+        ukupnoTrajanjeDatotekeInput.value = fileEndTC || '';
+    }
+
 
     if (musicStartTC && musicEndTC) {
-        rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja.';
+        rezultatDiv.textContent = 'Uspješno učitani i postavljeni XML podaci u input polja. Sada možete kliknuti "Izračunaj Markere".';
+        rezultatDiv.style.color = 'green';
     } else {
-        rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u.';
+        rezultatDiv.textContent = 'Upozorenje: "glazba_pocetak" ili "glazba_kraj" markeri nisu pronađeni u XML-u. Unesite ih ručno ili provjerite XML.';
+        rezultatDiv.style.color = 'orange';
     }
 }
 
@@ -170,32 +270,47 @@ function framesToTimecode(totalFrames, fps) {
 }
 
 /**
- * Glavna funkcija za generiranje XML-a i preuzimanje datoteke.
+ * Izračunava markere i prikazuje rezultate, te prebacuje na stranicu rezultata.
  */
-function generateXmlAndDownload() {
-    const fps = parseFloat(fpsInput.value);
-    const bpm = parseFloat(bpmInput.value);
-    const varijabilniBPM = parseFloat(varijabilniBpmInput.value); // Čitanje varijabilnog BPM-a
+function calculateMarkersAndShowResults() {
+    const fps = parseFloat(fpsSelect.value); // Ispravljen ID
+    const fiksniBPM = parseFloat(fiksniBPMInput.value); // Ispravljen ID
+    const ciljaniBPM = parseFloat(ciljaniBPMInput.value); // Ispravljen ID
+    const mjeraTakta = parseInt(mjeraTaktaInput.value, 10); // Ispravljen ID
+    const pragDriftaFrameovi = parseInt(pragDriftaFrameoviInput.value, 10); // Ispravljen ID
 
     if (isNaN(fps) || fps <= 0) {
         rezultatDiv.textContent = 'Greška: Unesite ispravan FPS (veći od 0).';
+        rezultatDiv.style.color = 'red';
         return;
     }
-    if (isNaN(bpm) || bpm <= 0) {
-        rezultatDiv.textContent = 'Greška: Unesite ispravan BPM (veći od 0).';
+    if (isNaN(fiksniBPM) || fiksniBPM <= 0) {
+        rezultatDiv.textContent = 'Greška: Unesite ispravan Fiksni BPM (veći od 0).';
+        rezultatDiv.style.color = 'red';
         return;
     }
-    // Provjera varijabilnog BPM-a - može biti 0 ili veći
-    if (isNaN(varijabilniBPM) || varijabilniBPM < 0) {
-         rezultatDiv.textContent = 'Greška: Unesite ispravan varijabilni BPM (0 ili veći decimalni broj).';
-         return;
+    if (isNaN(ciljaniBPM) || ciljaniBPM <= 0) {
+        rezultatDiv.textContent = 'Greška: Unesite ispravan Ciljani BPM (veći od 0).';
+        rezultatDiv.style.color = 'red';
+        return;
+    }
+    if (isNaN(mjeraTakta) || mjeraTakta < 1) {
+        rezultatDiv.textContent = 'Greška: Unesite ispravnu mjeru takta (barem 1).';
+        rezultatDiv.style.color = 'red';
+        return;
+    }
+    if (isNaN(pragDriftaFrameovi) || pragDriftaFrameovi < 0) {
+        rezultatDiv.textContent = 'Greška: Unesite ispravan prag drifta (0 ili veći).';
+        rezultatDiv.style.color = 'red';
+        return;
     }
 
     const pocetakSegmenta = pocetakGlazbenogSegmentaInput.value;
     const krajSegmenta = krajGlazbenogSegmentaInput.value;
 
     if (!pocetakSegmenta || !krajSegmenta) {
-        rezultatDiv.textContent = 'Greška: Molimo unesite početni i krajnji timecode glazbenog segmenta.';
+        rezultatDiv.textContent = 'Greška: Molimo unesite početni i krajnji timecode glazbenog segmenta (ili učitajte XML).';
+        rezultatDiv.style.color = 'red';
         return;
     }
 
@@ -205,70 +320,105 @@ function generateXmlAndDownload() {
 
         if (endFrames <= startFrames) {
             rezultatDiv.textContent = 'Greška: Krajnji timecode mora biti veći od početnog timecodea.';
+            rezultatDiv.style.color = 'red';
             return;
         }
 
         const durationFrames = endFrames - startFrames;
-        const framesPerBeat = (fps * 60) / bpm;
 
-        // Izračunavanje drift efekta
-        const initialBpmFramesPerBeat = (fps * 60) / bpm;
-        const finalBpmFramesPerBeat = (fps * 60) / (bpm + varijabilniBPM);
+        // Izračunavanje varijabilnog BPM-a (drift)
+        // Formula: Varijabilni BPM = Ciljani BPM - Fiksni BPM
+        const varijabilniBPM = ciljaniBPM - fiksniBPM;
+
+        // Izračunavanje framesPerBeat za početni i krajnji BPM
+        const initialBpmFramesPerBeat = (fps * 60) / fiksniBPM;
+        const finalBpmFramesPerBeat = (fps * 60) / (fiksniBPM + varijabilniBPM); // Ovdje se koristi fiksniBPM + varijabilniBPM za krajnji BPM
 
         console.log(`Početni timecode: ${pocetakSegmenta} (${startFrames} frames)`);
         console.log(`Krajnji timecode: ${krajSegmenta} (${endFrames} frames)`);
         console.log(`Trajanje segmenta: ${durationFrames} frames`);
         console.log(`FPS: ${fps}`);
-        console.log(`BPM: ${bpm}`);
-        console.log(`Varijabilni BPM: ${varijabilniBPM}`);
+        console.log(`Fiksni BPM: ${fiksniBPM}`);
+        console.log(`Ciljani BPM: ${ciljaniBPM}`);
+        console.log(`Izračunati varijabilni BPM (drift): ${varijabilniBPM.toFixed(4)}`); // Preciznost za varijabilni BPM
         console.log(`Frames po beatu (početni): ${initialBpmFramesPerBeat.toFixed(2)}`);
         console.log(`Frames po beatu (krajnji): ${finalBpmFramesPerBeat.toFixed(2)}`);
 
-        const beatMarkers = [];
+
+        calculatedBeatMarkers = []; // Resetiraj globalnu listu markera
         let currentBeatFrame = startFrames;
         let beatIndex = 0;
+        let markerDisplayHtml = '<h3>Izračunati Beat Markeri:</h3><ul>';
 
-        // Iteriranje kroz taktove i dodavanje markera
         while (currentBeatFrame <= endFrames) {
-            beatMarkers.push({
-                timecode: framesToTimecode(Math.round(currentBeatFrame), fps),
-                comment: `Beat ${beatIndex}`
+            const beatTimecode = framesToTimecode(Math.round(currentBeatFrame), fps);
+            const comment = `Beat ${beatIndex}`;
+
+            calculatedBeatMarkers.push({
+                timecode: beatTimecode,
+                comment: comment
             });
+            markerDisplayHtml += `<li>${comment}: ${beatTimecode}</li>`;
 
             // Izračunavanje interpoliranog framesPerBeat za sljedeći takt
-            // Linearna interpolacija: frames_po_beatu = (1 - progres) * početni_frames_po_beatu + progres * krajnji_frames_po_beatu
             const progress = (currentBeatFrame - startFrames) / durationFrames;
             const interpolatedFramesPerBeat = initialBpmFramesPerBeat + (finalBpmFramesPerBeat - initialBpmFramesPerBeat) * progress;
 
             currentBeatFrame += interpolatedFramesPerBeat;
             beatIndex++;
         }
+        markerDisplayHtml += '</ul>';
+        markeriOutput.innerHTML = markerDisplayHtml;
 
-        console.log("Izračunati beat markeri:", beatMarkers);
+        console.log("Izračunati beat markeri:", calculatedBeatMarkers);
 
-        // --- POZIV FUNKCIJE ZA GENERIRANJE EDIUS-KOMPATIBILNOG XML-a ---
-        const xmlContent = generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC);
+        // Prikaz upozorenja o driftu ako je varijabilniBPM veći od 0 ili manji od 0
+        if (varijabilniBPM !== 0) { // Ako je različito od 0, postoji drift
+            rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Drift: ${varijabilniBPM.toFixed(4)}. Kliknite "Preuzmi XML" gumb.`;
+            rezultatDiv.style.color = 'blue';
+        } else {
+            rezultatDiv.textContent = `Generirano ${calculatedBeatMarkers.length} markera. Nema drifta. Kliknite "Preuzmi XML" gumb.`;
+            rezultatDiv.style.color = 'green';
+        }
+
+        showPage('results-page'); // Prelazak na stranicu s rezultatima
+
+    } catch (error) {
+        console.error("Greška pri izračunu markera:", error);
+        rezultatDiv.textContent = `Greška pri izračunu: ${error.message}`;
+        rezultatDiv.style.color = 'red';
+    }
+}
+
+/**
+ * Glavna funkcija za generiranje XML-a i preuzimanje datoteke.
+ */
+function generateXmlAndDownload() {
+    if (calculatedBeatMarkers.length === 0) {
+        alert('Nema izračunatih markera za generiranje XML-a. Molimo prvo izračunajte markere.');
+        return;
+    }
+
+    try {
+        // Poziv funkcije za generiranje Edius-kompatibilnog XML-a
+        const xmlContent = generateEdiusCompatibleXml(calculatedBeatMarkers, musicStartTC, musicEndTC);
 
         // KREIRANJE BLOB-a s eksplicitnim UTF-16 kodiranjem
-        // Ovo bi trebalo prisiliti preglednik da datoteku kodira kao UTF-16
         const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-16' });
 
         // Korištenje FileSaver.js za preuzimanje datoteke
         saveAs(blob, 'Edius_Beat_Markers.xml');
-        rezultatDiv.textContent = `Generirano ${beatMarkers.length} markera. Datoteka 'Edius_Beat_Markers.xml' preuzeta.`;
-
-        // Prikaz upozorenja o driftu ako je varijabilniBPM veći od 0
-        if (varijabilniBPM > 0) {
-            rezultatDiv.textContent += `\nUpozorenje: Primijenjen je drift od ${varijabilniBPM.toFixed(2)} BPM-a.`;
-        }
+        xmlOutputDiv.textContent = 'XML datoteka "Edius_Beat_Markers.xml" uspješno preuzeta.';
+        xmlOutputDiv.style.color = 'green';
 
     } catch (error) {
         console.error("Greška pri generiranju XML-a:", error);
-        rezultatDiv.textContent = `Greška: ${error.message}`;
+        xmlOutputDiv.textContent = `Greška pri generiranju XML-a: ${error.message}`;
+        xmlOutputDiv.style.color = 'red';
     }
 }
 
-// --- Nova pomoćna funkcija za formatiranje datuma ---
+// --- Pomoćna funkcija za formatiranje datuma u Edius formatu ---
 function getFormattedEdiusDate() {
     const now = new Date();
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -285,7 +435,7 @@ function getFormattedEdiusDate() {
     return `${dayName} ${monthName} ${dayNum} ${hours}:${minutes}:${seconds} ${year}`;
 }
 
-// --- Nova funkcija za generiranje Edius-kompatibilnog XML-a ---
+// --- Funkcija za generiranje Edius-kompatibilnog XML-a ---
 function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
     const doc = document.implementation.createDocument(null, 'edius:markerInfo', null);
     const root = doc.documentElement;
@@ -306,18 +456,19 @@ function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
     let markerNoCounter = 1;
 
     // Dodaje početni marker na 00:00:00:00 ako je pronađen u ulaznom XML-u (fileStartTC)
-    // ili ga dodajemo uvijek kao standard. Edius ga obično izvozi.
     const initialMarker = doc.createElement('edius:marker');
     initialMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
     initialMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
-    initialMarker.appendChild(doc.createElement('edius:position')).textContent = fileStartTC || '00:00:00:00'; // Koristi fileStartTC ako je dostupan
+    // Koristi fileStartTC iz parsiranog XML-a, ili default '00:00:00:00'
+    initialMarker.appendChild(doc.createElement('edius:position')).textContent = fileStartTC || '00:00:00:00';
     initialMarker.appendChild(doc.createElement('edius:duration')).textContent = '--:--:--:--';
     initialMarker.appendChild(doc.createElement('edius:comment')).textContent = '';
     initialMarker.appendChild(doc.createElement('edius:color')).textContent = '0xffffffff';
     markerLists.appendChild(initialMarker);
 
-    // Dodaje 'glazba_pocetak' marker ako je dostupan i nije isti kao početni marker 00:00:00:00
-    if (musicStartTC && musicStartTC !== initialMarker.querySelector('edius\\:position').textContent) {
+    // Dodaje 'glazba_pocetak' marker ako je dostupan i nije isti kao početni marker (00:00:00:00)
+    // Važno: Provjeravamo da li se musicStartTC razlikuje od initialMarkera da ne bi duplicirali 00:00:00:00
+    if (musicStartTC && musicStartTC !== (fileStartTC || '00:00:00:00')) {
         const startMarker = doc.createElement('edius:marker');
         startMarker.appendChild(doc.createElement('edius:no')).textContent = markerNoCounter++;
         startMarker.appendChild(doc.createElement('edius:anchor')).textContent = '1';
@@ -359,9 +510,11 @@ function generateEdiusCompatibleXml(beatMarkers, musicStartTC, musicEndTC) {
     xmlString = `<?xml version="1.0" encoding="UTF-16" standalone="no"?>\n` +
                 xmlString.replace(/<\?xml version="1.0"( encoding="utf-8")?\?>/i, '');
 
-    // --- KLJUČNA NOVA LINIJA: Zamjena LF s CRLF za Windows kompatibilnost ---
-    // Ovo osigurava da prekidi linija budu kompatibilni s Windows sustavima
+    // Zamjena LF s CRLF za Windows kompatibilnost
     xmlString = xmlString.replace(/\n/g, '\r\n');
 
     return xmlString;
 }
+
+// Pozovi ovu funkciju kada se stranica učita
+document.addEventListener('DOMContentLoaded', initializeApp);
